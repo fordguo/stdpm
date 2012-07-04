@@ -33,13 +33,13 @@ class CoreClient(NetstringReceiver):
     print "---str:",string
 
   def sendJson(self,string):
-    sendString("json:"+string)
+    self.sendString("json:"+string)
 
   def sendYaml(self,string):
-    sendString("yaml:"+string)
+    self.sendString("yaml:"+string)
 
   def sendText(self,string):
-    sendString("text:"+string)
+    self.sendString("text:"+string)
 
 class CoreClientFactory(ReconnectingClientFactory):
 

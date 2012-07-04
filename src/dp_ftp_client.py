@@ -64,13 +64,12 @@ def connectionMade(ftpClient,fileset):
     d.addCallbacks(processFiles, fail, callbackArgs=(ftpClient,proto,path,))
 
 def processFiles(result,ftpClient,proto,path):
-  print result
   files = proto.buffer.getvalue()
   proto.buffer.close()
   print files
   fname = "slyj_ybsf.pdf"
-  d = ftpClient.retrieveFile("%s/%s"%(path,fname), BufferFileTransferProtocol(fname))
-  d.addCallback(lambda x,y:y.quit().addCallback(echoResult),ftpClient)
+  #d = ftpClient.retrieveFile("%s/%s"%(path,fname), BufferFileTransferProtocol(fname))
+  #d.addCallback(lambda x,y:y.quit().addCallback(echoResult),ftpClient)
 
 def crcCheck(source,target):
   return crc32(source)==crc32(target)

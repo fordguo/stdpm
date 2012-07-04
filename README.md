@@ -1,4 +1,4 @@
-Smart Twisted based Distributed Process Management
+Smart Distributed Process Management
 =====
 
 The Twisted based Distributed Process Management(STDPM) include two components:

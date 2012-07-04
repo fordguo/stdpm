@@ -18,12 +18,13 @@ def initYaml(yamlDir=None):
   for f in files:
     pg = ProcessGroup(f)
     procGroupDict[pg.name] = pg
+    pg.start()
 
 class ProcessGroup:
   def __init__(self,yamlFile):
     fileName = os.path.basename(yamlFile)
     self.name = os.path.splitext(fileName)[0]
-    dirName = os.path.join(dpDir,'data','ps',self.name)
+    self.groupDir = dirName= os.path.join(dpDir,'data','ps',self.name)
     if not os.path.exists( dirName):
       os.makedirs(dirName)
     self.procsMap = yaml.safe_load(file(yamlFile))
@@ -67,7 +68,7 @@ class LocalProcess(protocol.ProcessProtocol):
   def __init__(self, name,group):
     self.name = "".join([x for x in name if x.isalnum()])
     self.group = group
-    self.logFile = LogFile(self.name+".log",os.path.join(dpDir,group.name),maxRotatedFiles=10)
+    self.logFile = LogFile(self.name+".log",group.groupDir,maxRotatedFiles=10)
     self.status = PROC_STATUS.STOP
     self.endTime = None
 
