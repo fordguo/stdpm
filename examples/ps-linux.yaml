@@ -1,0 +1,31 @@
+echo 15:
+  executable: /bin/echo
+  args: ["hello"]
+  user: null
+  group: null
+  env: null
+  path: null
+  usePTY: false
+  childFDs: null
+  restart: 
+    enable: true
+    periodMinutes: 5
+  monitor:
+    enable: false
+    log:
+      file: null
+      keyword: null
+      action: KILL #KILL,TERM,INT
+  fileUpdate:
+    restart: true
+    fileSet: 
+    - remote: 
+        dir:
+        files: []
+      local:
+sleep 5:
+  executable: /bin/sleep
+  args: [5]
+test :
+  executable: /Users/ford/work/kindsoft/git/nnm/karaf/karaf-custom/target/assembly/bin/karaf
+  args: ['server']
