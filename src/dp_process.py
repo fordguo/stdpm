@@ -47,7 +47,9 @@ class ProcessGroup:
       print 'process '+procName +' have not found or have been started.'
 
   def iterStatus(self):
-    yield self.locals.iteritems()
+    return self.locals.iteritems()
+  def iterMap(self):
+    return self.procsMap.iteritems()
   def stop(self):
     for localProc in self.locals.itervalues():
       if localProc.isRunning():
