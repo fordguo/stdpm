@@ -1,6 +1,8 @@
 from twisted.application import internet, service
+from twisted.web import server
 from dp_server import CoreServerFactory
 from dp_ftp_server import initFtpFactory
+from dp_web import root
 
 serverPort = 56024
 ftpPort = 56021
@@ -11,6 +13,7 @@ httpPort = 56080
 serverService = service.MultiService()
 internet.TCPServer(serverPort, CoreServerFactory()).setServiceParent(serverService)
 internet.TCPServer(ftpPort,initFtpFactory()).setServiceParent(serverService)
+internet.TCPServer(httpPort,server.Site(root)).setServiceParent(serverService)
 # Create an application as normal
 application = service.Application("SPDM Server")
 

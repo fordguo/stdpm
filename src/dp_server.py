@@ -16,6 +16,8 @@ DATA_DIR="data"
 
 db = None 
 resourceDict = {}
+clientIps = set()
+clientProtocolDict = {}
 
 JSON = 'json:'
 JSON_LEN = len(JSON)
@@ -30,13 +32,37 @@ def init():
   def check(txn):
     res = txn.execute("SELECT * FROM sqlite_master WHERE type='table' AND name=?",['Process']).fetchone()
     if res is None:
-      txn.execute("CREATE TABLE Process(clientIp VARCHAR(64),procGroup VARCHAR(255),procName VARCHAR(255),procInfo TEXT,\
-        PRIMARY KEY(clientIp,procGroup,procName))")
+      txn.execute('CREATE TABLE Process(clientIp VARCHAR(64),procGroup VARCHAR(255),procName VARCHAR(255),procInfo TEXT,\
+        PRIMARY KEY(clientIp,procGroup,procName))')
+    else:
+      def initDb(result):
+        for res in result:
+          ip = res[0]
+          if ip not in clientIps:
+            clientIps.add(ip)
+          _checkResourceDictName(procName(ip,res[1],res[2]),)
+      db.runQuery('SELECT clientIp,procGroup,procName  FROM Process').addCallback(initDb)
   db.runInteraction(check).addCallback(lambda x:x)
-
+def getDb():
+  return db
 def getStatus(name):
   return resourceDict.get(name,DEFAULT_INVALID)
 
+def isRun(name):
+  return resourceDict.get(name,DEFAULT_INVALID)['status']==PROC_STATUS.RUN
+def countStop(ip):
+  return len(filter(lambda x: x[0].startswith(ip+':') and x[1]['status']==PROC_STATUS.STOP,resourceDict.iteritems()))
+def procName(ip,group,name):
+  return "%s:%s:%s"%(ip,group,name)
+
+def _checkResourceDictName(name,status=None):
+  value = resourceDict.get(name)
+  status = PROC_STATUS.STOP if status is None else status
+  if value is None:
+    resourceDict[name] = {'status':status,'lastUpdated':datetime.now()}
+  else:
+    value['status'] = status
+    value['lastUpdated'] = datetime.now()
 class CoreServer(NetstringReceiver):
   def __init__(self):
     self.ip = None
@@ -45,9 +71,14 @@ class CoreServer(NetstringReceiver):
       self.ip =  self.transport.getPeer().host
     return self.ip
   def connectionMade(self):
-    resourceDict[self._getIp()] = {'communication':True,"lastUpdated":datetime.now()}
+    clientIp = self._getIp()
+    resourceDict[clientIp] = {'status':PROC_STATUS.RUN,"lastUpdated":datetime.now()}
+    clientProtocolDict[clientIp] = this
+    clientIps.add(clientIp)
   def connectionLost(self, reason):
-    del resourceDict[self._getIp()]
+    clientIp = self._getIp()
+    del resourceDict[clientIp]
+    del clientProtocolDict[clientIp]
 
   def stringReceived(self, string):
     if string.startswith(JSON):
@@ -71,7 +102,7 @@ class CoreServer(NetstringReceiver):
     else:
       print 'unknow json:',json
   def _procName(self,value):
-    return "%s:%s:%s"%(self._getIp(),value['group'],value['name'])
+    return procName(self._getIp(),value['group'],value['name'])
 
   def _processYaml(self,group,name,yamlStr):
     db.runOperation('INSERT OR REPLACE INTO Process(clientIp,procGroup,procName,procInfo) VALUES(?,?,?,?)',
