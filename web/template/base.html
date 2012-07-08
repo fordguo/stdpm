@@ -1,3 +1,4 @@
+## -*- coding: utf-8 -*-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -36,9 +37,9 @@
           <a class="brand" href="#"><b>S</b>mart twisted <b>D</b>istributed <b>P</b>rocess</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li class="$procActiveCss"><a href="/clientProc">Process</a></li>
-              <li class="$clientActiveCss"> <a href="/client">Client</a></li>
-              <li class="$aboutActiveCss"><a href="/about">About</a></li>
+              <li class="${procActiveCss}"><a href="/clientProc">Process</a></li>
+              <li class="${clientActiveCss}"> <a href="/client">Client</a></li>
+              <li class="${aboutActiveCss}"><a href="/about">About</a></li>
             </ul>
           </div><!--/.nav-collapse -->
         </div>
@@ -47,7 +48,7 @@
 
     <div class="container">
     	<div class="row">
-        $mainContent
+        ${next.body()}
     	</div>
     </div> <!-- /container -->
     <script src="/static/js/jquery.min.js"></script>

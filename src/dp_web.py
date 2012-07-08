@@ -3,26 +3,21 @@
 from twisted.web.resource import Resource
 from twisted.web.static import File
 from twisted.web.server import NOT_DONE_YET
-from twisted.python.filepath import FilePath
-from twisted.internet.defer import Deferred
 
-import os
-from string import Template
+import os,tempfile
+from mako.template import Template
+from mako.lookup import TemplateLookup
 
 from dp_common import dpDir
 from dp_server import getDb,clientIps,getStatus,isRun,countStop
 
 templatePath = os.path.join(dpDir,'web','template','')
-
+webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',module_directory=tempfile.gettempdir())
 
 activeCssDict = {'procActiveCss':'','clientActiveCss':'','aboutActiveCss':''}
 
-def getTemplate(name):
-  with open(os.path.join(templatePath,"%s.html"%name)) as f:
-    return Template(f.read())
-
-mainTemplate = getTemplate('main')
-clientSideTemplate = getTemplate('clientSidebar')
+def getTemplateContent(name,**kw):
+  return str(webLookup.get_template('%s.html'%name).render(**kw))
 
 class RootResource(Resource):
   def _changeActiveCss(self,name):
@@ -45,29 +40,24 @@ def finishRequest(result,request):
   request.finish()
 
 class ProcessResource(Resource):
-  def _sidebarContent(self,currentIp):
-    tagLis = []
-    for i,ip in enumerate(clientIps):
-      actCss = '' if ip!=currentIp else 'active'
-      labelCss =  '' if isRun(ip) else 'label label-important'
-      count = countStop(ip)
-      stopCountLabel = '' if count<=0 else '<span class="badge badge-warning">%d</span>'%count
-      tagLis.append('<li class="%s"><a href="/clientProc?ip=%s"><span class="%s">%s</span> %s</a></li>'
-        %(actCss,ip,labelCss,ip,stopCountLabel))
-    return clientSideTemplate.safe_substitute(clientList='\n'.join(tagLis))
   def render_GET(self, request):
-    print request.args
     currentIp = request.args.get('ip')
     if currentIp is None and len(clientIps)>0:
       currentIp = iter(clientIps).next()
     else:
       currentIp = currentIp[0]
     def procList(result):
-      mainDict = {'mainContent':str(self._sidebarContent(currentIp))}
-      mainDict.update(activeCssDict)
-      request.write(mainTemplate.safe_substitute(mainDict))
-      request.finish()          
-    getDb().runQuery('SELECT clientIp,procGroup,procName FROM Process').addCallback(procList)
+      actCssList = []
+      labelCssList = []
+      countList = []
+      for ip in clientIps:
+        actCssList.append('active' if currentIp==ip else '')
+        labelCssList.append('' if isRun(ip) else 'label label-important')
+        countList.append(countStop(ip))
+      request.write(getTemplateContent('proc',clientIps=clientIps,actCssList=actCssList,labelCssList=labelCssList,\
+        countList=countList,result=result,**activeCssDict))
+    print currentIp
+    getDb().runQuery('SELECT procGroup,procName FROM Process WHERE clientIp = ?',[currentIp]).addCallback(procList).addBoth(finishRequest,request)
     return NOT_DONE_YET
 
 root = RootResource()
