@@ -12,7 +12,8 @@ from dp_common import dpDir
 from dp_server import getDb,clientIps,getStatus,isRun,countStop
 
 templatePath = os.path.join(dpDir,'web','template','')
-webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',module_directory=tempfile.gettempdir())
+webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',output_encoding='utf-8',\
+  module_directory=tempfile.gettempdir())
 
 activeCssDict = {'procActiveCss':'','clientActiveCss':'','aboutActiveCss':''}
 
@@ -56,7 +57,6 @@ class ProcessResource(Resource):
         countList.append(countStop(ip))
       request.write(getTemplateContent('proc',clientIps=clientIps,actCssList=actCssList,labelCssList=labelCssList,\
         countList=countList,result=result,**activeCssDict))
-    print currentIp
     getDb().runQuery('SELECT procGroup,procName FROM Process WHERE clientIp = ?',[currentIp]).addCallback(procList).addBoth(finishRequest,request)
     return NOT_DONE_YET
 
