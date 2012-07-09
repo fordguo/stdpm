@@ -9,7 +9,7 @@ from mako.template import Template
 from mako.lookup import TemplateLookup
 
 from dp_common import dpDir
-from dp_server import getDb,clientIps,getStatus,isRun,countStop
+from dp_server import getDb,clientIps,getStatus,isRun,countStop,uniqueProcName
 
 templatePath = os.path.join(dpDir,'web','template','')
 webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',output_encoding='utf-8',\
@@ -48,15 +48,24 @@ class ProcessResource(Resource):
     else:
       currentIp = currentIp[0]
     def procList(result):
-      actCssList = []
-      labelCssList = []
-      countList = []
+      clientSideArgs = {'actCssList':[],'labelCssList':[],'countList':[]}
       for ip in clientIps:
-        actCssList.append('active' if currentIp==ip else '')
-        labelCssList.append('' if isRun(ip) else 'label label-important')
-        countList.append(countStop(ip))
-      request.write(getTemplateContent('proc',clientIps=clientIps,actCssList=actCssList,labelCssList=labelCssList,\
-        countList=countList,result=result,**activeCssDict))
+        clientSideArgs['actCssList'].append('active' if currentIp==ip else '')
+        clientSideArgs['labelCssList'].append('' if isRun(ip) else 'label label-important')
+        clientSideArgs['countList'].append(countStop(ip))
+      procDict = {}
+      for row in result:
+        grpName,procName = [row[0],row[1]]
+        procStatus = getStatus(uniqueProcName(currentIp,grpName,procName))
+        procRow = [procName,procStatus['status'],procStatus['lastUpdated']]
+        procGrp =  procDict.get(grpName)
+        if procGrp is None:
+          procGrp = [procRow]
+          procDict[grpName] = procGrp
+        else:
+          procGrp.append(procRow)
+      request.write(getTemplateContent('proc',clientIps=clientIps,clientSideArgs=clientSideArgs,\
+        procDict=procDict,**activeCssDict))
     getDb().runQuery('SELECT procGroup,procName FROM Process WHERE clientIp = ?',[currentIp]).addCallback(procList).addBoth(finishRequest,request)
     return NOT_DONE_YET
 

@@ -1,4 +1,3 @@
-## -*- coding: utf-8 -*-
 <%inherit file="base.html"/>
 <div class="span2">
 	<div class="well sidebar-nav">
@@ -7,11 +6,11 @@
 				Remote  Clients
 			</li>
 			% for i,ip in enumerate(clientIps):
-			<li class="${actCssList[i]}"> 
+			<li class="${clientSideArgs['actCssList'][i]}"> 
 				<a href="/clientProc?ip=%{ip}">
-					<span class="${labelCssList[i]}">${ip}</span>
-					% if countList[i] > 0:
-					<span class="badge badge-warning">${countList[i]}</span>
+					<span class="${clientSideArgs['labelCssList'][i]}">${ip}</span>
+					% if clientSideArgs['countList'][i] > 0:
+					<span class="badge badge-warning">${clientSideArgs['countList'][i]}</span>
 					% endif
 				</a>
 			</li>

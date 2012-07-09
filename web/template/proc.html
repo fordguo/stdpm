@@ -1,4 +1,3 @@
-## -*- coding: utf-8 -*-
 <%inherit file="procBase.html"/>
 <h2>Process List</h2>
 <table class="table table-striped table-bordered table-condensed">
@@ -12,14 +11,18 @@
 		<tr>
 	</thead>
 	<tbody>
-		% for row in result:
+		% for key,value in procDict.iteritems():
+			% for i,procRow in enumerate(value):
 		<tr>
-			<td>${row[0]}</td>
-			<td>${row[1]}</td>
-			<td></td>
-			<td></td>
+			% if i==0 :
+				<td rowspan="${len(value)}">${key}</td>
+			% endif
+			<td>${procRow[0]}</td>
+			<td>${procRow[1].name}</td>
+			<td>${procRow[2]}</td>
 			<td></td>
 		</tr>
+			% endfor
 		% endfor
 	</tbody>
 </table>

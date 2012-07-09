@@ -40,7 +40,7 @@ def init():
           ip = res[0]
           if ip not in clientIps:
             clientIps.add(ip)
-          _checkResourceDictName(procName(ip,res[1],res[2]),)
+          _checkResourceDictName(uniqueProcName(ip,res[1],res[2]),)
       db.runQuery('SELECT clientIp,procGroup,procName  FROM Process').addCallback(initDb)
   db.runInteraction(check).addCallback(lambda x:x)
 def getDb():
@@ -52,7 +52,7 @@ def isRun(name):
   return resourceDict.get(name,DEFAULT_INVALID)['status']==PROC_STATUS.RUN
 def countStop(ip):
   return len(filter(lambda x: x[0].startswith(ip+':') and x[1]['status']==PROC_STATUS.STOP,resourceDict.iteritems()))
-def procName(ip,group,name):
+def uniqueProcName(ip,group,name):
   return "%s:%s:%s"%(ip,group,name)
 
 def _checkResourceDictName(name,status=None):
@@ -102,7 +102,7 @@ class CoreServer(NetstringReceiver):
     else:
       print 'unknow json:',json
   def _procName(self,value):
-    return procName(self._getIp(),value['group'],value['name'])
+    return uniqueProcName(self._getIp(),value['group'],value['name'])
 
   def _processYaml(self,group,name,yamlStr):
     db.runOperation('INSERT OR REPLACE INTO Process(clientIp,procGroup,procName,procInfo) VALUES(?,?,?,?)',
