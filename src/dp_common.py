@@ -5,6 +5,9 @@ import os
 
 dpDir = "."
 
+JSON = 'json:'
+JSON_LEN = len(JSON)
+
 def changeDpDir(newDir):
   global dpDir
   dpDir = newDir

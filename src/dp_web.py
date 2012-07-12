@@ -4,13 +4,17 @@ from twisted.web.resource import Resource
 from twisted.web.static import File
 from twisted.web.server import NOT_DONE_YET
 
-import os,tempfile
+from zope.interface import Interface, Attribute, implements
+from twisted.python.components import registerAdapter
+from twisted.web.server import Session
+
+import os,tempfile,json
 from mako.template import Template
 from mako.lookup import TemplateLookup
 
 from dp_common import dpDir
 from dp_process import LPConfig
-from dp_server import getDb,clientIps,getStatus,isRun,countStop,uniqueProcName,splitProcName
+from dp_server import getDb,clientIpDict,getStatus,isRun,countStop,uniqueProcName,splitProcName,clientProtocolDict
 
 templatePath = os.path.join(dpDir,'web','template','')
 webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',output_encoding='utf-8',\
@@ -18,9 +22,20 @@ webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',out
 
 activeCssDict = {'procActiveCss':'','clientActiveCss':'','aboutActiveCss':''}
 
+class IFlash(Interface):
+    msg = Attribute("A temp message.")
+
+class Flash(object):
+    implements(IFlash)
+    def __init__(self, session):
+        self.msg = ''
+
+registerAdapter(Flash, Session, IFlash)
+
 def getTemplateContent(name,**kw):
   return str(webLookup.get_template('%s.html'%name).render(**kw))
-
+def fmtDate(date):
+  return 'N/A' if date is None else date.strftime('%Y-%m-%d %H:%M:%S')
 class RootResource(Resource):
   def _changeActiveCss(self,name):
     for k in activeCssDict.iterkeys():
@@ -28,7 +43,9 @@ class RootResource(Resource):
   def getChild(self, name, request):
     if name=='client':
       self._changeActiveCss('clientActiveCss')
-      return "client"
+      return ClientResource()
+    elif name=='clientOp':
+      return ClientOpResource()
     elif name=='about':
       self._changeActiveCss('aboutActiveCss')
       return "about"
@@ -39,23 +56,51 @@ class RootResource(Resource):
       self._changeActiveCss('procActiveCss')
       return ProcessResource()
 
-def finishRequest(result,request):
+def finishRequest(result,request,flash=None):
   if result:
     print result
+  if flash:
+    flash.msg = ''
   request.finish()
+
+class ClientOpResource(Resource):
+  def render_POST(self, request):
+    cmdStr = request.args['op'][0]
+    ip = request.args.get('ip')[0]
+    clientProtocolDict[ip].sendJson(json.dumps({'action':'clientOp','value':cmdStr}))
+    msg = 'Send Command %s to %s'%(cmdStr,ip)
+    flash = IFlash(request.getSession())
+    flash.msg = msg
+    request.redirect('/client')
+    return ""
+
+class ClientResource(Resource):
+  def __init__(self):
+    Resource.__init__(self)
+  def render_GET(self, request):
+    clientDict = {}
+    for key,val in clientIpDict.iteritems():
+      status = getStatus(key)
+      clientDict[key] = {'version':val.get('version','N/A'),'status':status['status'],\
+      'lastConnected':fmtDate(status['lastUpdated']),'lastPatched':'N/A'}
+    flash = IFlash(request.getSession())
+    request.write(getTemplateContent('client',clientDict=clientDict,msg=flash.msg,**activeCssDict))
+    finishRequest(None,request,flash)
+    return NOT_DONE_YET
 
 class ProcessResource(Resource):
   def _initClientSideArgs(self,currentIp):
-    clientSideArgs = {'actCssList':[],'labelCssList':[],'countList':[],'clientIps':clientIps,'currentIp':currentIp}
-    for ip in clientIps:
+    ips = clientIpDict.keys()
+    clientSideArgs = {'actCssList':[],'labelCssList':[],'countList':[],'clientIps':ips,'currentIp':currentIp}
+    for ip in ips:
       clientSideArgs['actCssList'].append('active' if currentIp==ip else '')
       clientSideArgs['labelCssList'].append('' if isRun(ip) else 'label label-important')
       clientSideArgs['countList'].append(countStop(ip))
     return clientSideArgs
   def render_GET(self, request):
     currentIp = request.args.get('ip')
-    if currentIp is None and len(clientIps)>0:
-      currentIp = iter(clientIps).next()
+    if currentIp is None and len(clientIpDict)>0:
+      currentIp = iter(clientIpDict.keys()).next()
     else:
       currentIp = currentIp[0]
     def procList(result):
@@ -64,7 +109,7 @@ class ProcessResource(Resource):
         grpName,procName = [row[0],row[1]]
         uniName = uniqueProcName(currentIp,grpName,procName)
         procStatus = getStatus(uniName)
-        procRow = [procName,procStatus['status'],procStatus['lastUpdated'],uniName]
+        procRow = [procName,procStatus['status'],fmtDate(procStatus['lastUpdated']),uniName]
         procGrp =  procDict.get(grpName)
         if procGrp is None:
           procGrp = [procRow]

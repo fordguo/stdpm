@@ -9,18 +9,18 @@ from datetime import datetime
 import os
 import json
 
-from dp_common import PROC_STATUS,dpDir,checkDir
+from dp_common import PROC_STATUS,dpDir,checkDir,JSON,JSON_LEN
 
-DEFAULT_INVALID = {'status':PROC_STATUS.STOP,'lastUpdated':datetime.now()}
+version = "1.0.1"
+
+DEFAULT_INVALID = {'status':PROC_STATUS.STOP,'lastUpdated':None}
 DATA_DIR="data"
 
 db = None 
 resourceDict = {}
-clientIps = set()
+clientIpDict = {}
 clientProtocolDict = {}
 
-JSON = 'json:'
-JSON_LEN = len(JSON)
 YAML = 'yaml:'
 YAML_LEN = len(YAML)
 
@@ -38,11 +38,14 @@ def init():
       def initDb(result):
         for res in result:
           ip = res[0]
-          if ip not in clientIps:
-            clientIps.add(ip)
+          _checkIpDict(ip)
           _checkResourceDictName(uniqueProcName(ip,res[1],res[2]),)
       db.runQuery('SELECT clientIp,procGroup,procName  FROM Process').addCallback(initDb)
   db.runInteraction(check).addCallback(lambda x:x)
+def _checkIpDict(ip):
+  if  not clientIpDict.has_key(ip):
+    clientIpDict[ip] = {}
+  return clientIpDict[ip]
 def getDb():
   return db
 def getStatus(name):
@@ -61,7 +64,7 @@ def _checkResourceDictName(name,status=None):
   value = resourceDict.get(name)
   status = PROC_STATUS.STOP if status is None else status
   if value is None:
-    resourceDict[name] = {'status':status,'lastUpdated':datetime.now()}
+    resourceDict[name] = {'status':status,'lastUpdated':None}
   else:
     value['status'] = status
     value['lastUpdated'] = datetime.now()
@@ -76,7 +79,7 @@ class CoreServer(NetstringReceiver):
     clientIp = self._getIp()
     resourceDict[clientIp] = {'status':PROC_STATUS.RUN,"lastUpdated":datetime.now()}
     clientProtocolDict[clientIp] = self
-    clientIps.add(clientIp)
+    _checkIpDict(clientIp)
   def connectionLost(self, reason):
     clientIp = self._getIp()
     del resourceDict[clientIp]
@@ -101,6 +104,9 @@ class CoreServer(NetstringReceiver):
       else:
         status['status'] = PROC_STATUS.lookupByName(value['status'])
         status['lastUpdated'] = datetime.now()
+    elif action=='clientVersion':
+      result = _checkIpDict(self._getIp())
+      result['version'] = json['value']
     else:
       print 'unknow json:',json
   def _procName(self,value):
@@ -109,6 +115,9 @@ class CoreServer(NetstringReceiver):
   def _processYaml(self,group,name,yamlStr):
     db.runOperation('INSERT OR REPLACE INTO Process(clientIp,procGroup,procName,procInfo) VALUES(?,?,?,?)',
       (self._getIp(),group,name,yamlStr)).addCallback(lambda x:x)
+
+  def sendJson(self,string):
+    self.sendString("json:"+string)
 
 class CoreServerFactory(Factory):
   protocol = CoreServer

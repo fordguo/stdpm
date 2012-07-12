@@ -8,8 +8,11 @@ import json
 import yaml
 from dp_process import procGroupDict,initYaml
 from dp_ftp_client import downloadFiles
+from dp_common import JSON,JSON_LEN
 
 client = None
+
+version="1.0.1"
 
 def minuteCheck():
   if client is None:return
@@ -29,13 +32,24 @@ class CoreClient(NetstringReceiver):
     for procGroup in procGroupDict.itervalues():
       for name,procInfo in procGroup.iterMap():
         self.sendYaml("%s:%s:%s"%(procGroup.name,name.replace(':','_-_'),yaml.dump(procInfo,default_flow_style=None)))
+    self.sendJson(json.dumps({'action':'clientVersion','value':version}))
   def connectionLost(self, reason):
     global client
     client = None
 
   def stringReceived(self, string):
-    print "---str:",string
+    if string.startswith(JSON):
+      self._processJson(json.loads(string[JSON_LEN:]))
+    else:
+      print 'string is not json %s'%string
 
+  def _processJson(self,json):
+    action = json.get('action')
+    if action=='clientOp':
+      value = json['value']
+      print value
+    else:
+      print 'unknown json %s'%json
   def sendJson(self,string):
     self.sendString("json:"+string)
 
