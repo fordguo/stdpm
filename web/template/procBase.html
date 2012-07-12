@@ -5,9 +5,9 @@
 			<li class="nav-header">
 				Remote  Clients
 			</li>
-			% for i,ip in enumerate(clientIps):
+			% for i,ip in enumerate(clientSideArgs['clientIps']):
 			<li class="${clientSideArgs['actCssList'][i]}"> 
-				<a href="/clientProc?ip=%{ip}">
+				<a href="/clientProc?ip=${ip}">
 					<span class="${clientSideArgs['labelCssList'][i]}">${ip}</span>
 					% if clientSideArgs['countList'][i] > 0:
 					<span class="badge badge-warning">${clientSideArgs['countList'][i]}</span>

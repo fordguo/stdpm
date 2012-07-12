@@ -9,7 +9,8 @@ from mako.template import Template
 from mako.lookup import TemplateLookup
 
 from dp_common import dpDir
-from dp_server import getDb,clientIps,getStatus,isRun,countStop,uniqueProcName
+from dp_process import LPConfig
+from dp_server import getDb,clientIps,getStatus,isRun,countStop,uniqueProcName,splitProcName
 
 templatePath = os.path.join(dpDir,'web','template','')
 webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',output_encoding='utf-8',\
@@ -31,6 +32,9 @@ class RootResource(Resource):
     elif name=='about':
       self._changeActiveCss('aboutActiveCss')
       return "about"
+    elif name=='clientProcInfo':
+      self._changeActiveCss('procActiveCss')
+      return ProcessInfoResource()
     else:
       self._changeActiveCss('procActiveCss')
       return ProcessResource()
@@ -41,6 +45,13 @@ def finishRequest(result,request):
   request.finish()
 
 class ProcessResource(Resource):
+  def _initClientSideArgs(self,currentIp):
+    clientSideArgs = {'actCssList':[],'labelCssList':[],'countList':[],'clientIps':clientIps,'currentIp':currentIp}
+    for ip in clientIps:
+      clientSideArgs['actCssList'].append('active' if currentIp==ip else '')
+      clientSideArgs['labelCssList'].append('' if isRun(ip) else 'label label-important')
+      clientSideArgs['countList'].append(countStop(ip))
+    return clientSideArgs
   def render_GET(self, request):
     currentIp = request.args.get('ip')
     if currentIp is None and len(clientIps)>0:
@@ -48,25 +59,34 @@ class ProcessResource(Resource):
     else:
       currentIp = currentIp[0]
     def procList(result):
-      clientSideArgs = {'actCssList':[],'labelCssList':[],'countList':[]}
-      for ip in clientIps:
-        clientSideArgs['actCssList'].append('active' if currentIp==ip else '')
-        clientSideArgs['labelCssList'].append('' if isRun(ip) else 'label label-important')
-        clientSideArgs['countList'].append(countStop(ip))
       procDict = {}
       for row in result:
         grpName,procName = [row[0],row[1]]
-        procStatus = getStatus(uniqueProcName(currentIp,grpName,procName))
-        procRow = [procName,procStatus['status'],procStatus['lastUpdated']]
+        uniName = uniqueProcName(currentIp,grpName,procName)
+        procStatus = getStatus(uniName)
+        procRow = [procName,procStatus['status'],procStatus['lastUpdated'],uniName]
         procGrp =  procDict.get(grpName)
         if procGrp is None:
           procGrp = [procRow]
           procDict[grpName] = procGrp
         else:
           procGrp.append(procRow)
-      request.write(getTemplateContent('proc',clientIps=clientIps,clientSideArgs=clientSideArgs,\
-        procDict=procDict,**activeCssDict))
+      request.write(getTemplateContent('proc',clientSideArgs=self._initClientSideArgs(currentIp),\
+        procDict=procDict,currentIp=currentIp,**activeCssDict))
     getDb().runQuery('SELECT procGroup,procName FROM Process WHERE clientIp = ?',[currentIp]).addCallback(procList).addBoth(finishRequest,request)
+    return NOT_DONE_YET
+
+class ProcessInfoResource(ProcessResource):
+  def render_GET(self, request):
+    uniName = request.args.get('name')
+    if uniName is None:request.redirect("/")
+    ip,grpName,procName = splitProcName(uniName[0])
+    def procInfo(result):
+      yamContent = result[0][0]
+      request.write(getTemplateContent('procInfo',clientSideArgs=self._initClientSideArgs(ip),\
+        grpName=grpName,procName=procName,ip=ip,yamContent=yamContent,**activeCssDict))
+    getDb().runQuery('SELECT procInfo FROM Process WHERE clientIp = ? and procGroup = ? and procName = ?',\
+      [ip,grpName,procName]).addCallback(procInfo).addBoth(finishRequest,request)
     return NOT_DONE_YET
 
 root = RootResource()

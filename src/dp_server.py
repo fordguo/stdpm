@@ -54,6 +54,8 @@ def countStop(ip):
   return len(filter(lambda x: x[0].startswith(ip+':') and x[1]['status']==PROC_STATUS.STOP,resourceDict.iteritems()))
 def uniqueProcName(ip,group,name):
   return "%s:%s:%s"%(ip,group,name)
+def splitProcName(name):
+  return name.split(":")
 
 def _checkResourceDictName(name,status=None):
   value = resourceDict.get(name)
@@ -73,7 +75,7 @@ class CoreServer(NetstringReceiver):
   def connectionMade(self):
     clientIp = self._getIp()
     resourceDict[clientIp] = {'status':PROC_STATUS.RUN,"lastUpdated":datetime.now()}
-    clientProtocolDict[clientIp] = this
+    clientProtocolDict[clientIp] = self
     clientIps.add(clientIp)
   def connectionLost(self, reason):
     clientIp = self._getIp()

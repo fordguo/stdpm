@@ -1,13 +1,12 @@
 echo 15:
-  executable: /bin/echo
   args: ["hello"]
-  user: null
-  group: null
   env: null
+  executable: /bin/echo
+  group: null
   path: null
   usePTY: false
-  childFDs: null
-  restart: 
+  user: null
+  restart:
     enable: true
     periodMinutes: 5
   monitor:
@@ -18,14 +17,14 @@ echo 15:
       action: KILL #KILL,TERM,INT
   fileUpdate:
     restart: true
-    fileSet: 
-    - remote: 
-        dir:
-        files: []
-      local:
-sleep 5:
-  executable: /bin/sleep
-  args: [5]
+    fileSet:
+      - local:
+        remote: 
+          dir:
+          files: []
 test :
-  executable: /Users/ford/work/kindsoft/git/nnm/karaf/karaf-custom/target/assembly/bin/karaf
   args: ['server']
+  executable: /Users/ford/work/kindsoft/git/nnm/karaf/karaf-custom/target/assembly/bin/karaf
+sleep 5:
+  args: [5]
+  executable: /bin/sleep

@@ -28,7 +28,7 @@ class CoreClient(NetstringReceiver):
     client = self
     for procGroup in procGroupDict.itervalues():
       for name,procInfo in procGroup.iterMap():
-        self.sendYaml("%s:%s:%s"%(procGroup.name,name.replace(':','_-_'),yaml.safe_dump(procInfo)))
+        self.sendYaml("%s:%s:%s"%(procGroup.name,name.replace(':','_-_'),yaml.dump(procInfo,default_flow_style=None)))
   def connectionLost(self, reason):
     global client
     client = None
@@ -44,7 +44,7 @@ class CoreClient(NetstringReceiver):
 
 class CoreClientFactory(ReconnectingClientFactory):
 
-  def __init__(self,):
+  def __init__(self):
     looping.start(10)
     initYaml()
 

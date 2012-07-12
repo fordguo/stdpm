@@ -10,7 +10,52 @@ import os
 import yaml
 import glob
 
+PS_BASIC = ['executable','args','path','user','group','usePTY','childFDs']
+
 procGroupDict = {}
+
+class LPConfig(object):
+  """the local process configure information"""
+  def __init__(self, confDict):
+    super(LPConfig, self).__init__()
+    self.confDict = confDict.copy()
+    self.executable = self.confDict.pop('executable')
+    self.args = self.confDict.pop("args",())
+    self.execArgs = [self.executable]+[str(x) for x in self.args]
+    self.usePTY = self.confDict.pop('usePTY',False)
+  def __getattr__(self, name):
+    if self.__dict__.has_key(name):
+      return self.__dict__[name]
+    else:
+      return self.confDict.get(name)
+  def baseValue(self):
+    result = []
+    for k in PS_BASIC:
+      v = self.__getattr__(d)
+      if v is not None:
+        result.add((k,v))
+    return result
+  def restartValue(self):
+    return self.confDict.get('restart',{'enable':True,'periodMinutes':5}).iteritems()
+  def monitorValue(self):
+    result = []
+    mValue =  self.confDict.get('monitor',{'enable':False})
+    result.add(('enable',mValue.get('enable')))
+    if mValue.has_key('log'):
+      lDict = mValue.get('log')
+      if lDict.get('file') is not None and lDict.get('keyword') is not None:
+        result.add(('log',[('file',lDict.get('file')),('keyword',lDict.get('keyword')),\
+          ('action',lDict.get('action','KILL'))]))
+    return result
+  def fileUpdateInfo(self):
+    result = []
+    fValue =  self.confDict.get('fileUpdate')
+    fileSet = fValue.get('fileSet')
+    if fileSet :
+      result.add(('restart',fValue.get('restart',True)))
+      result.add(('fileSet',fileSet))
+    return result
+
 def initYaml(yamlDir=None):
   if yamlDir is None:
     yamlDir = os.path.join(dpDir,'conf','')
@@ -27,18 +72,17 @@ class ProcessGroup:
     self.groupDir = dirName= os.path.join(dpDir,'data','ps',self.name)
     if not os.path.exists( dirName):
       os.makedirs(dirName)
-    self.procsMap = yaml.safe_load(file(yamlFile))
+    self.procsMap = yaml.load(file(yamlFile))
     self.locals = {}
   def start(self):
     for name,procInfo in self.procsMap.iteritems():
       self._start(name,procInfo)
   def _start(self,name,procInfo):
     localProc = LocalProcess(name,self)
+    conf = LPConfig(procInfo)
     self.locals[name] = localProc
-    cmd = procInfo['executable']
-    args =  procInfo.get("args",())
-    reactor.spawnProcess(localProc,cmd, [cmd]+[str(x) for x in args],procInfo.get("env"),\
-      procInfo.get("path"),procInfo.get("user"),procInfo.get("group"),procInfo.get("usePTY",False),procInfo.get("childFDs"))
+    reactor.spawnProcess(localProc,conf.executable, conf.execArgs,conf.env,\
+      conf.path,conf.user,conf.group,conf.usePTY,conf.childFDs)
   def startProc(self,procName):
     localProc = self.locals[procName]
     if localProc and not localProc.isRunning():
