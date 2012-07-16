@@ -9,7 +9,7 @@ from datetime import datetime
 import os
 import json
 
-from dp.common import PROC_STATUS,dpDir,checkDir,JSON,JSON_LEN
+from dp.common import PROC_STATUS,getDpDir,checkDir,JSON,JSON_LEN,changeDpDir
 
 version = "1.0.1"
 
@@ -26,7 +26,7 @@ YAML_LEN = len(YAML)
 
 def init():
   global db
-  dataDir = os.path.join(dpDir,DATA_DIR) 
+  dataDir = os.path.join(getDpDir(),DATA_DIR) 
   checkDir(dataDir)
   db = adbapi.ConnectionPool("sqlite3", database=os.path.join(dataDir,"stdpm.db"),check_same_thread=False)
   def check(txn):
@@ -131,6 +131,7 @@ from dp.server.web import root
 
 def makeService(config):
   serverService = service.MultiService()
+  changeDpDir(config['dataDir'])
   internet.TCPServer(config['mainPort'], CoreServerFactory()).setServiceParent(serverService)
   internet.TCPServer(config['ftpPort'],initFtpFactory()).setServiceParent(serverService)
   internet.TCPServer(config['httpPort'],server.Site(root)).setServiceParent(serverService)

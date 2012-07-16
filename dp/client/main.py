@@ -8,7 +8,7 @@ import json
 import yaml
 from process import procGroupDict,initYaml
 from dp.client.ftp import downloadFiles
-from dp.common import JSON,JSON_LEN
+from dp.common import JSON,JSON_LEN,changeDpDir
 
 client = None
 
@@ -71,6 +71,7 @@ class CoreClientFactory(ReconnectingClientFactory):
 from twisted.application import internet, service
 def makeService(config):
   clientService = service.MultiService()
+  changeDpDir(config['dataDir'])
   internet.TCPClient(config['server'],config['port'], CoreClientFactory()).setServiceParent(clientService)
   return clientService
 

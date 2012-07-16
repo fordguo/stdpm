@@ -7,7 +7,8 @@ class Options(usage.Options):
     ['mainPort', 'm',56024],
     ['ftpPort', 'f',56021],
     ['httpPort', 'h',56080],
-    ]
+    ['dataDir','d','.']
+	]
 
   optFlags = []
 

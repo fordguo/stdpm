@@ -4,11 +4,11 @@ from twisted.protocols.ftp import FTPFactory, FTPRealm
 from twisted.cred.portal import Portal
 from twisted.cred.checkers import FilePasswordDB
 
-from dp.common import dpDir,checkDir
+from dp.common import getDpDir,checkDir
 import os
 
 def initFtpFactory():
-  ftpRoot = os.path.join(dpDir,'data','ftp','')
+  ftpRoot = os.path.join(getDpDir(),'data','ftp','')
   ftpData = os.path.join(ftpRoot,'data')
   checkDir(ftpData)
   passFile = os.path.join(ftpRoot,"userpass.dat")

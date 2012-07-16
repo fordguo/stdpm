@@ -3,14 +3,17 @@
 from twisted.python.constants import NamedConstant, Names
 import os
 
-dpDir = "."
+_dpDir = "."
 
 JSON = 'json:'
 JSON_LEN = len(JSON)
 
 def changeDpDir(newDir):
-  global dpDir
-  dpDir = newDir
+  global _dpDir
+  checkDir(newDir)
+  _dpDir = newDir
+def getDpDir():
+  return _dpDir
 
 def checkDir(dstDir):
   if not os.path.exists(dstDir):

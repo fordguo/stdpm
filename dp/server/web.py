@@ -112,7 +112,7 @@ class ProcessResource(Resource):
     currentIp = request.args.get('ip')
     if currentIp is None and len(clientIpDict)>0:
       currentIp = iter(clientIpDict.keys()).next()
-    else:
+    elif currentIp:
       currentIp = currentIp[0]
     def procList(result):
       procDict = {}

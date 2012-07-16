@@ -14,9 +14,9 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from dp.common import dpDir,checkDir
+from dp.common import getDpDir,checkDir
 
-cacheDir = os.path.join(dpDir,'data','filecache','')
+cacheDir = os.path.join(getDpDir(),'data','filecache','')
 checkDir(cacheDir)
 
 class BufferFileTransferProtocol(Protocol):
