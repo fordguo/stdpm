@@ -7,7 +7,8 @@ class Options(usage.Options):
     ['server', 'h','localhost'],
     ['port', 'p',56024],
     ['ftpPort', 'f',56021],
-    ['dataDir','d','.']
+    ['dataDir','d','.'],
+    ['confDir','c','conf']
   ]
 
   optFlags = []

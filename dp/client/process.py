@@ -16,8 +16,8 @@ procGroupDict = {}
 
 def initYaml(yamlDir=None):
   if yamlDir is None:
-    yamlDir = os.path.join(getDpDir(),'conf','')
-  files = glob.glob(yamlDir+'*.yaml')
+    yamlDir = os.path.join(getDpDir(),'conf')
+  files = glob.glob(os.path.join(yamlDir,'*.yaml'))
   for f in files:
     pg = ProcessGroup(f)
     procGroupDict[pg.name] = pg

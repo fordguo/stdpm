@@ -61,9 +61,8 @@ class CoreClient(NetstringReceiver):
 class CoreClientFactory(ReconnectingClientFactory):
 
   def __init__(self):
-    looping.start(10)
-    initYaml()
-
+    pass
+    
   def buildProtocol(self, addr):
     self.resetDelay()
     return CoreClient()
@@ -72,6 +71,8 @@ from twisted.application import internet, service
 def makeService(config):
   clientService = service.MultiService()
   changeDpDir(config['dataDir'])
+  initYaml(config['confDir'])
+  looping.start(10)
   internet.TCPClient(config['server'],config['port'], CoreClientFactory()).setServiceParent(clientService)
   return clientService
 
