@@ -9,7 +9,7 @@ from datetime import datetime
 import os
 import json
 
-from dp_common import PROC_STATUS,dpDir,checkDir,JSON,JSON_LEN
+from dp.common import PROC_STATUS,dpDir,checkDir,JSON,JSON_LEN
 
 version = "1.0.1"
 
@@ -123,3 +123,16 @@ class CoreServerFactory(Factory):
   protocol = CoreServer
   def __init__(self):
     init()  
+
+from twisted.application import internet, service
+from twisted.web import server
+from dp.server.ftp import initFtpFactory
+from dp.server.web import root
+
+def makeService(config):
+  serverService = service.MultiService()
+  internet.TCPServer(config['mainPort'], CoreServerFactory()).setServiceParent(serverService)
+  internet.TCPServer(config['ftpPort'],initFtpFactory()).setServiceParent(serverService)
+  internet.TCPServer(config['httpPort'],server.Site(root)).setServiceParent(serverService)
+  return serverService
+

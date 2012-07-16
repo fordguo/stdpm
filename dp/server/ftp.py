@@ -4,7 +4,7 @@ from twisted.protocols.ftp import FTPFactory, FTPRealm
 from twisted.cred.portal import Portal
 from twisted.cred.checkers import FilePasswordDB
 
-from dp_common import dpDir,checkDir
+from dp.common import dpDir,checkDir
 import os
 
 def initFtpFactory():

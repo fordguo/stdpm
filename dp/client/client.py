@@ -6,9 +6,9 @@ from twisted.internet import reactor,task
 
 import json
 import yaml
-from dp_process import procGroupDict,initYaml
-from dp_ftp_client import downloadFiles
-from dp_common import JSON,JSON_LEN
+from process import procGroupDict,initYaml
+from ftp_client import downloadFiles
+from common import JSON,JSON_LEN
 
 client = None
 
@@ -48,6 +48,8 @@ class CoreClient(NetstringReceiver):
     if action=='clientOp':
       value = json['value']
       print value
+      if value=='Restart':
+        reactor.stop()
     else:
       print 'unknown json %s'%json
   def sendJson(self,string):

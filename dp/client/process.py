@@ -4,7 +4,7 @@
 from twisted.internet import reactor,protocol
 from twisted.python.logfile import DailyLogFile,LogFile
 from datetime import datetime
-from dp_common import SIGNAL_NAME,PROC_STATUS,dpDir
+from common import SIGNAL_NAME,PROC_STATUS,dpDir,LPConfig
 
 import os
 import yaml
@@ -13,48 +13,6 @@ import glob
 PS_BASIC = ['executable','args','path','user','group','usePTY','childFDs']
 
 procGroupDict = {}
-
-class LPConfig(object):
-  """the local process configure information"""
-  def __init__(self, confDict):
-    super(LPConfig, self).__init__()
-    self.confDict = confDict.copy()
-    self.executable = self.confDict.pop('executable')
-    self.args = self.confDict.pop("args",())
-    self.execArgs = [self.executable]+[str(x) for x in self.args]
-    self.usePTY = self.confDict.pop('usePTY',False)
-  def __getattr__(self, name):
-    if self.__dict__.has_key(name):
-      return self.__dict__[name]
-    else:
-      return self.confDict.get(name)
-  def baseValue(self):
-    result = []
-    for k in PS_BASIC:
-      v = self.__getattr__(d)
-      if v is not None:
-        result.add((k,v))
-    return result
-  def restartValue(self):
-    return self.confDict.get('restart',{'enable':True,'periodMinutes':5}).iteritems()
-  def monitorValue(self):
-    result = []
-    mValue =  self.confDict.get('monitor',{'enable':False})
-    result.add(('enable',mValue.get('enable')))
-    if mValue.has_key('log'):
-      lDict = mValue.get('log')
-      if lDict.get('file') is not None and lDict.get('keyword') is not None:
-        result.add(('log',[('file',lDict.get('file')),('keyword',lDict.get('keyword')),\
-          ('action',lDict.get('action','KILL'))]))
-    return result
-  def fileUpdateInfo(self):
-    result = []
-    fValue =  self.confDict.get('fileUpdate')
-    fileSet = fValue.get('fileSet')
-    if fileSet :
-      result.add(('restart',fValue.get('restart',True)))
-      result.add(('fileSet',fileSet))
-    return result
 
 def initYaml(yamlDir=None):
   if yamlDir is None:

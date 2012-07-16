@@ -14,7 +14,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from dp_common import dpDir,checkDir
+from common import dpDir,checkDir
 
 cacheDir = os.path.join(dpDir,'data','filecache','')
 checkDir(cacheDir)

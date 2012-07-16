@@ -1,5 +1,5 @@
 <%!
-    from dp_server import isRun
+    from dp.server.main import isRun
 %>
 <%inherit file="base.html"/>
 <h2>Client List</h2>
@@ -37,10 +37,10 @@
 			<td>${value['lastConnected']}</td>
 			<td>${value['lastPatched']}</td>
 			<td>
-				% if not isRun(value['status']):
+				% if  isRun(key):
 				<form class="form-inline" style="margin-bottom:2px;" method="POST" action="/clientOp">
 				<input type="hidden" name="ip" value="${key}"></input>
-				<input class="btn" type="submit" name="op" value="Reconnect"></input>
+				<input class="btn" type="submit" name="op" value="Restart"></input>
 				<input class="btn" type="submit" name="op" value="Patch"></input>
 				</form>
 				% endif

@@ -1,6 +1,5 @@
 echo 15:
   args: ["hello"]
-  env: null
   executable: /bin/echo
   group: null
   path: null

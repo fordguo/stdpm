@@ -9,14 +9,19 @@ from twisted.python.components import registerAdapter
 from twisted.web.server import Session
 
 import os,tempfile,json
+import time
 from mako.template import Template
 from mako.lookup import TemplateLookup
 
-from dp_common import dpDir
-from dp_process import LPConfig
-from dp_server import getDb,clientIpDict,getStatus,isRun,countStop,uniqueProcName,splitProcName,clientProtocolDict
+from dp.common import LPConfig
+from dp.server.main import getDb,clientIpDict,getStatus,isRun,countStop,uniqueProcName,splitProcName,clientProtocolDict
 
-templatePath = os.path.join(dpDir,'web','template','')
+import dp
+dpDir = os.path.dirname(dp.__file__)
+serverDir = os.path.join(dpDir,'server')
+
+templatePath = os.path.join(serverDir,'web','template','')
+print templatePath
 webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',output_encoding='utf-8',\
   module_directory=tempfile.gettempdir())
 
@@ -48,7 +53,7 @@ class RootResource(Resource):
       return ClientOpResource()
     elif name=='about':
       self._changeActiveCss('aboutActiveCss')
-      return "about"
+      return AboutResource()
     elif name=='clientProcInfo':
       self._changeActiveCss('procActiveCss')
       return ProcessInfoResource()
@@ -63,6 +68,11 @@ def finishRequest(result,request,flash=None):
     flash.msg = ''
   request.finish()
 
+class AboutResource(Resource):
+  def __init__(self):
+    Resource.__init__(self)
+  def render_GET(self, request):
+    return getTemplateContent('about',**activeCssDict)
 class ClientOpResource(Resource):
   def render_POST(self, request):
     cmdStr = request.args['op'][0]
@@ -71,6 +81,7 @@ class ClientOpResource(Resource):
     msg = 'Send Command %s to %s'%(cmdStr,ip)
     flash = IFlash(request.getSession())
     flash.msg = msg
+    time.sleep(0.5)
     request.redirect('/client')
     return ""
 
@@ -135,5 +146,5 @@ class ProcessInfoResource(ProcessResource):
     return NOT_DONE_YET
 
 root = RootResource()
-root.putChild("static", File(os.path.join(dpDir,'web','static')))
-root.putChild("favicon.ico", File(os.path.join(dpDir,'web','static','img','favicon.ico')))
+root.putChild("static", File(os.path.join(serverDir,'web','static')))
+root.putChild("favicon.ico", File(os.path.join(serverDir,'web','static','img','favicon.ico')))

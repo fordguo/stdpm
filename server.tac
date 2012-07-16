@@ -1,8 +1,3 @@
-from twisted.application import internet, service
-from twisted.web import server
-from dp_server import CoreServerFactory
-from dp_ftp_server import initFtpFactory
-from dp_web import root
 
 serverPort = 56024
 ftpPort = 56021
