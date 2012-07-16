@@ -7,8 +7,8 @@ from twisted.internet import reactor,task
 import json
 import yaml
 from process import procGroupDict,initYaml
-from ftp_client import downloadFiles
-from common import JSON,JSON_LEN
+from dp.client.ftp import downloadFiles
+from dp.common import JSON,JSON_LEN
 
 client = None
 
@@ -67,3 +67,10 @@ class CoreClientFactory(ReconnectingClientFactory):
   def buildProtocol(self, addr):
     self.resetDelay()
     return CoreClient()
+
+from twisted.application import internet, service
+def makeService(config):
+  clientService = service.MultiService()
+  internet.TCPClient(config['server'],config['port'], CoreClientFactory()).setServiceParent(clientService)
+  return clientService
+

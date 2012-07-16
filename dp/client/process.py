@@ -4,7 +4,7 @@
 from twisted.internet import reactor,protocol
 from twisted.python.logfile import DailyLogFile,LogFile
 from datetime import datetime
-from common import SIGNAL_NAME,PROC_STATUS,dpDir,LPConfig
+from dp.common import SIGNAL_NAME,PROC_STATUS,dpDir,LPConfig
 
 import os
 import yaml
