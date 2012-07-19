@@ -5,7 +5,7 @@ from twisted.internet.error import ConnectionDone
 from twisted.internet import reactor
 from twisted.protocols.ftp import FTPClient
 
-import os,sys
+import os
 import zlib
 import fnmatch
 from datetime import datetime
@@ -20,8 +20,9 @@ cacheDir = os.path.join(getDpDir(),'data','filecache','')
 checkDir(cacheDir)
 
 class BufferFileTransferProtocol(Protocol):
-  def __init__(self,fname):
+  def __init__(self,fname,localInfo):
     self.fname=fname
+    self.localInfo = localInfo
     self.tmpName=os.path.join(cacheDir,fname+'.tmp')
     self.fileInst=open(self.tmpName,'wb+')
   def dataReceived(self,data):
@@ -53,20 +54,22 @@ def fail(error):
 def echoResult(result):
   print result
 
-def downloadFiles(fileset=[]):
-  creator = ClientCreator(reactor, FTPClient,'user','trunksoft')
-  creator.connectTCP('localhost',56021).addCallback(connectionMade,fileset).addErrback(fail)
+def downloadFiles(config,fileset=[]):
+  creator = ClientCreator(reactor, FTPClient,config['ftpUser'],config['ftpPassword'])
+  creator.connectTCP(config['server'],config['ftpPort']).addCallback(connectionMade,fileset).addErrback(fail)
 
 def connectionMade(ftpClient,fileset):
+  for fileInfo in fileset:
     proto = FilesProtocol()
-    path = '.'
+    path = fileInfo['remote']['dir']
     d = ftpClient.nlst(path, proto)
     d.addCallbacks(processFiles, fail, callbackArgs=(ftpClient,proto,path,))
 
-def processFiles(result,ftpClient,proto,path):
+def processFiles(result,ftpClient,proto,path,):
   files = proto.buffer.getvalue()
   proto.buffer.close()
   print files
+  fnmatch.filter(files,)
   fname = "slyj_ybsf.pdf"
   #d = ftpClient.retrieveFile("%s/%s"%(path,fname), BufferFileTransferProtocol(fname))
   #d.addCallback(lambda x,y:y.quit().addCallback(echoResult),ftpClient)

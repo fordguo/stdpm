@@ -18,6 +18,8 @@ echo 15:
     restart: true
     fileSet:
       - local:
+          dir:
+          effectWithRestart:
         remote: 
           dir:
           files: []

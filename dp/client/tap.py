@@ -6,9 +6,11 @@ class Options(usage.Options):
   optParameters = [
     ['server', 'h','localhost'],
     ['port', 'p',56024],
-    ['ftpPort', 'f',56021],
     ['dataDir','d','.'],
-    ['confDir','c','conf']
+    ['confDir','c','conf'],
+    ['ftpPort', 'f',56021],
+    ['ftpUser','u','user'],
+    ['ftpPassword','P','trunksoft']
   ]
 
   optFlags = []
