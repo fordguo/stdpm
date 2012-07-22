@@ -48,7 +48,6 @@ class CoreClient(NetstringReceiver):
     action = json.get('action')
     if action=='clientOp':
       value = json['value']
-      print value
       if value=='Restart':
         reactor.stop()
       elif value=='Patch':

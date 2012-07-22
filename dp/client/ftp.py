@@ -44,9 +44,9 @@ class BufferFileTransferProtocol(Protocol):
         changed = True
       if changed:
         os.rename(self.tmpName, cacheFile)
-        localDir = localInfo['dir']
+        localDir = self.localInfo['dir']
         checkDir(localDir)
-        if localInfo.get('restartRename',False):
+        if self.localInfo.get('restartRename',False):
           shutil.copy(cacheFile,os.paht.join(localDir,'%s.new'%(cacheFile)))
         else:
           shutil.copy(cacheFile,localDir)
@@ -55,7 +55,7 @@ def fail(error):
   print 'Ftp failed.  Error was:',error
 
 def echoResult(result):
-  print result
+  print "echoResult",result
 
 def downloadFiles(config,fileset=[]):
   creator = ClientCreator(reactor, FTPClient,config['ftpUser'],config['ftpPassword'])
@@ -78,13 +78,12 @@ def connectionMade(ftpClient,fileset):
     d.addCallbacks(processFiles, fail, callbackArgs=(ftpClient,proto,remoteDir,remoteFilters,localInfo,n==lastLen))
 
 def processFiles(result,ftpClient,proto,remoteDir,remoteFilters,localInfo,isLast):
-  print proto.files
   d = None
   for f in proto.files:
     if f['filetype']=='-':
       fName = f['filename']
       for fl in remoteFilters:
-        if fnmatch.filter(fName,fl):
+        if fnmatch.fnmatch(fName,fl):
           d = ftpClient.retrieveFile("%s/%s"%(remoteDir,fName), BufferFileTransferProtocol(fName,localInfo))
   if isLast and d:
     d.addCallback(lambda x,y:y.quit().addCallback(echoResult),ftpClient)
