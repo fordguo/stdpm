@@ -3,17 +3,24 @@
 from twisted.python.constants import NamedConstant, Names
 import os
 
-_dpDir = "."
+_datarootDir = "."
 
 JSON = 'json:'
 JSON_LEN = len(JSON)
 
+import dp
+dpDir = os.path.dirname(dp.__file__)
+selfFileSet = [
+  {'local':{'dir':dpDir},'remote':{'dir':'selfupdate','filters':['*.py']}},
+  {'local':{'dir':os.path.join(dpDir,'client')},'remote':{'dir':'selfupdate/client','filters':['*.py']}},
+  ]
+
 def changeDpDir(newDir):
-  global _dpDir
+  global _datarootDir
   checkDir(newDir)
-  _dpDir = newDir
-def getDpDir():
-  return _dpDir
+  _datarootDir = newDir
+def getDatarootDir():
+  return _datarootDir
 
 def checkDir(dstDir):
   if not os.path.exists(dstDir):

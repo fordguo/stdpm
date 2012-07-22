@@ -13,11 +13,10 @@ import time
 from mako.template import Template
 from mako.lookup import TemplateLookup
 
-from dp.common import LPConfig
-from dp.server.main import getDb,clientIpDict,getStatus,isRun,countStop,uniqueProcName,splitProcName,clientProtocolDict
+from dp.common import LPConfig,dpDir,selfFileSet
+from dp.server.main import getDb,clientIpDict,getStatus,isRun,countStop,uniqueProcName,\
+  splitProcName,clientProtocolDict,checkPatchDir
 
-import dp
-dpDir = os.path.dirname(dp.__file__)
 serverDir = os.path.join(dpDir,'server')
 
 templatePath = os.path.join(serverDir,'web','template','')
@@ -95,7 +94,7 @@ class ClientResource(Resource):
       clientDict[key] = {'version':val.get('version','N/A'),'status':status['status'],\
       'lastConnected':fmtDate(status['lastUpdated']),'lastPatched':'N/A'}
     flash = IFlash(request.getSession())
-    request.write(getTemplateContent('client',clientDict=clientDict,msg=flash.msg,**activeCssDict))
+    request.write(getTemplateContent('client',clientDict=clientDict,msg=flash.msg,canPatch=checkPatchDir(selfFileSet),**activeCssDict))
     finishRequest(None,request,flash)
     return NOT_DONE_YET
 

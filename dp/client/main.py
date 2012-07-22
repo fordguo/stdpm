@@ -4,15 +4,16 @@ from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor,task
 
-import json
+import os,json
 import yaml
 from process import procGroupDict,initYaml
 from dp.client.ftp import downloadFiles
-from dp.common import JSON,JSON_LEN,changeDpDir
+from dp.common import JSON,JSON_LEN,changeDpDir,selfFileSet
 
 client = None
 
 version="1.0.1"
+
 
 def minuteCheck():
   if client is None:return
@@ -24,8 +25,8 @@ def minuteCheck():
 looping = task.LoopingCall(minuteCheck)
 
 class CoreClient(NetstringReceiver):
-  def __init__(self):
-    pass
+  def __init__(self,config):
+    self.config = config
   def connectionMade(self):
     global client
     client = self
@@ -50,6 +51,8 @@ class CoreClient(NetstringReceiver):
       print value
       if value=='Restart':
         reactor.stop()
+      elif value=='Patch':
+        downloadFiles(self.config,selfFileSet)
     else:
       print 'unknown json %s'%json
   def sendJson(self,string):
@@ -59,13 +62,12 @@ class CoreClient(NetstringReceiver):
     self.sendString("yaml:"+string)
 
 class CoreClientFactory(ReconnectingClientFactory):
-
-  def __init__(self):
-    pass
+  def __init__(self,config):
+    self.config = config
     
   def buildProtocol(self, addr):
     self.resetDelay()
-    return CoreClient()
+    return CoreClient(self.config)
 
 from twisted.application import internet, service
 def makeService(config):
@@ -73,6 +75,6 @@ def makeService(config):
   changeDpDir(config['dataDir'])
   initYaml(config['confDir'])
   looping.start(10)
-  internet.TCPClient(config['server'],config['port'], CoreClientFactory()).setServiceParent(clientService)
+  internet.TCPClient(config['server'],config['port'], CoreClientFactory(config)).setServiceParent(clientService)
   return clientService
 

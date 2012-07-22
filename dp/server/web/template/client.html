@@ -41,7 +41,9 @@
 				<form class="form-inline" style="margin-bottom:2px;" method="POST" action="/clientOp">
 				<input type="hidden" name="ip" value="${key}"></input>
 				<input class="btn" type="submit" name="op" value="Restart"></input>
+				% if canPatch:
 				<input class="btn" type="submit" name="op" value="Patch"></input>
+				% endif
 				</form>
 				% endif
 			</td>

@@ -3,20 +3,19 @@
 from twisted.internet.protocol import ClientCreator, Protocol
 from twisted.internet.error import ConnectionDone
 from twisted.internet import reactor
-from twisted.protocols.ftp import FTPClient
+from twisted.protocols.ftp import FTPClient,FTPFileListProtocol
 
-import os
+import os,shutil,fnmatch
 import zlib
-import fnmatch
 from datetime import datetime
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
 
-from dp.common import getDpDir,checkDir
+from dp.common import getDatarootDir,checkDir
 
-cacheDir = os.path.join(getDpDir(),'data','filecache','')
+cacheDir = os.path.join(getDatarootDir(),'data','filecache','')
 checkDir(cacheDir)
 
 class BufferFileTransferProtocol(Protocol):
@@ -34,19 +33,23 @@ class BufferFileTransferProtocol(Protocol):
       os.remove(self.tmpName)
     else:
       cacheFile = os.path.join(cacheDir,self.fname)
+      changed = False
       if os.path.exists(cacheFile):
         if not crcCheck(self.tmpName,cacheFile):
           os.rename(cacheFile,"%s_%s"%(datetime.now().strftime('%Y%m%d-%H%M%S'),cacheFile))
+          changed = True
         else:
           os.remove(self.tmpName)
       else:
+        changed = True
+      if changed:
         os.rename(self.tmpName, cacheFile)
-
-class FilesProtocol(Protocol):
-  def __init__(self):
-    self.buffer = StringIO()
-  def dataReceived(self, data):
-    self.buffer.write(data)
+        localDir = localInfo['dir']
+        checkDir(localDir)
+        if localInfo.get('restartRename',False):
+          shutil.copy(cacheFile,os.paht.join(localDir,'%s.new'%(cacheFile)))
+        else:
+          shutil.copy(cacheFile,localDir)
 
 def fail(error):
   print 'Ftp failed.  Error was:',error
@@ -59,20 +62,32 @@ def downloadFiles(config,fileset=[]):
   creator.connectTCP(config['server'],config['ftpPort']).addCallback(connectionMade,fileset).addErrback(fail)
 
 def connectionMade(ftpClient,fileset):
-  for fileInfo in fileset:
-    proto = FilesProtocol()
-    path = fileInfo['remote']['dir']
-    d = ftpClient.nlst(path, proto)
-    d.addCallbacks(processFiles, fail, callbackArgs=(ftpClient,proto,path,))
+  lastLen = len(fileset)-1
+  for n,fileInfo in enumerate(fileset):
+    remoteInfo = fileInfo.get('remote')
+    if remoteInfo is None: continue
+    remoteDir = remoteInfo.get('dir')
+    if remoteDir is None: continue
+    localInfo = fileInfo.get('local')
+    if localInfo is None: continue
+    localDir = localInfo.get('dir')
+    if localDir is None or not os.path.exists(localDir): continue
+    remoteFilters = remoteInfo.get('filters',['*']) 
+    proto = FTPFileListProtocol()
+    d = ftpClient.list(remoteDir, proto)
+    d.addCallbacks(processFiles, fail, callbackArgs=(ftpClient,proto,remoteDir,remoteFilters,localInfo,n==lastLen))
 
-def processFiles(result,ftpClient,proto,path,):
-  files = proto.buffer.getvalue()
-  proto.buffer.close()
-  print files
-  fnmatch.filter(files,)
-  fname = "slyj_ybsf.pdf"
-  #d = ftpClient.retrieveFile("%s/%s"%(path,fname), BufferFileTransferProtocol(fname))
-  #d.addCallback(lambda x,y:y.quit().addCallback(echoResult),ftpClient)
+def processFiles(result,ftpClient,proto,remoteDir,remoteFilters,localInfo,isLast):
+  print proto.files
+  d = None
+  for f in proto.files:
+    if f['filetype']=='-':
+      fName = f['filename']
+      for fl in remoteFilters:
+        if fnmatch.filter(fName,fl):
+          d = ftpClient.retrieveFile("%s/%s"%(remoteDir,fName), BufferFileTransferProtocol(fName,localInfo))
+  if isLast and d:
+    d.addCallback(lambda x,y:y.quit().addCallback(echoResult),ftpClient)
 
 def crcCheck(source,target):
   return crc32(source)==crc32(target)

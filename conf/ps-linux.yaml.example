@@ -18,11 +18,11 @@ echo 15:
     restart: true
     fileSet:
       - local:
-          dir:
-          effectWithRestart:
+          dir: .
+          restartRename:
         remote: 
-          dir:
-          files: []
+          dir: .
+          filters: []
 test :
   args: ['server']
   executable: /Users/ford/work/kindsoft/git/nnm/karaf/karaf-custom/target/assembly/bin/karaf

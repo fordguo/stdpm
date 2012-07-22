@@ -9,7 +9,7 @@ from datetime import datetime
 import os
 import json
 
-from dp.common import PROC_STATUS,getDpDir,checkDir,JSON,JSON_LEN,changeDpDir
+from dp.common import PROC_STATUS,getDatarootDir,checkDir,JSON,JSON_LEN,changeDpDir,selfFileSet,dpDir
 
 version = "1.0.1"
 
@@ -26,7 +26,7 @@ YAML_LEN = len(YAML)
 
 def init():
   global db
-  dataDir = os.path.join(getDpDir(),DATA_DIR) 
+  dataDir = os.path.join(getDatarootDir(),DATA_DIR) 
   checkDir(dataDir)
   db = adbapi.ConnectionPool("sqlite3", database=os.path.join(dataDir,"stdpm.db"),check_same_thread=False)
   def check(txn):
@@ -42,6 +42,18 @@ def init():
           _checkResourceDictName(uniqueProcName(ip,res[1],res[2]),)
       db.runQuery('SELECT clientIp,procGroup,procName  FROM Process').addCallback(initDb)
   db.runInteraction(check).addCallback(lambda x:x)
+
+def checkPatchDir(fileset):
+  for f in fileset:
+    remoteInfo = f.get('remote')
+    if remoteInfo is None: continue
+    remoteDir = remoteInfo.get('dir')
+    if remoteDir is None: continue
+    ftpDir = os.path.join(getDatarootDir(),'data','ftp','data','user',remoteDir)
+    print ftpDir 
+    if os.path.exists(ftpDir):
+      return True
+  return False
 def _checkIpDict(ip):
   if  not clientIpDict.has_key(ip):
     clientIpDict[ip] = {}
