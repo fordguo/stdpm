@@ -6,7 +6,7 @@ from twisted.internet import reactor,task
 
 import os,json
 import yaml
-from process import procGroupDict,initYaml
+from process import procGroupDict,initYaml,restartProc,getLPConfig
 from dp.client.ftp import downloadFiles
 from dp.common import JSON,JSON_LEN,changeDpDir,selfFileSet
 
@@ -23,6 +23,10 @@ def minuteCheck():
         'name':name,'status':proc.status.name}}))
 
 looping = task.LoopingCall(minuteCheck)
+
+def getClient():
+  global client
+  return client
 
 class CoreClient(NetstringReceiver):
   def __init__(self,config):
@@ -52,6 +56,21 @@ class CoreClient(NetstringReceiver):
         reactor.stop()
       elif value=='Patch':
         downloadFiles(self.config,selfFileSet)
+    elif action=='procOp':
+      psGroup = json['grp']
+      psName = json['name']
+      op = json['op']
+      if op=='Restart':
+        restartProc(psGroup,psName)
+      elif op=='Patch':
+        lp = getLPConfig(psGroup,psName)
+        if lp:
+          updateInfo = lp.fileUpdateInfo()
+          downloadFiles(self.config,updateInfo[1][1],psGroup,psName,updateInfo[0][1],self)
+        else:
+          print 'can not found LPConfig with '+json
+      elif op=='Console':
+        print json
     else:
       print 'unknown json %s'%json
   def sendJson(self,string):

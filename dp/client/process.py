@@ -4,9 +4,9 @@
 from twisted.internet import reactor,protocol
 from twisted.python.logfile import DailyLogFile,LogFile
 from datetime import datetime
-from dp.common import SIGNAL_NAME,PROC_STATUS,getDatarootDir,LPConfig
+from dp.common import SIGNAL_NAME,PROC_STATUS,getDatarootDir,LPConfig,TIME_FORMAT,CR
 
-import os
+import os,time
 import yaml
 import glob
 
@@ -22,6 +22,29 @@ def initYaml(yamlDir=None):
     pg = ProcessGroup(f)
     procGroupDict[pg.name] = pg
     pg.start()
+
+def restartProc(psGroup,psName):
+  pg = procGroupDict.get(psGroup)
+  if pg:
+    pg.restartProc(psName)
+  else:
+    print 'can not found process group:'+psGroup
+
+def getLPConfig(psGroup,psName):
+  pg = procGroupDict.get(psGroup)
+  if pg:
+    procInfo = pg.procsMap.get(psName)
+    if procInfo:
+      return LPConfig(procInfo)
+  return None
+
+def patchLog(psGroup,psName,fname):
+  if psGroup is None: return
+  pg = procGroupDict.get(psGroup)
+  if pg:
+    localProc = pg.locals.get(psName)
+    if localProc:
+      localProc.logPatch(fname)
 
 class ProcessGroup:
   def __init__(self,yamlFile):
@@ -63,8 +86,11 @@ class ProcessGroup:
       localProc.signal(SIGNAL_NAME.KILL)
     else:
       print 'process '+procName +' have not found or have been stopped.'
-  def restartProc(self,procName):
-    self.stopProc(procName)
+  def restartProc(self,procName,secs=1):
+    localProc = self.locals[procName]
+    if localProc and localProc.isRunning():
+      self.stopProc(procName)
+      time.sleep(secs)
     self.startProc(procName)
 
     
@@ -73,21 +99,24 @@ class LocalProcess(protocol.ProcessProtocol):
     self.name = "".join([x for x in name if x.isalnum()])
     self.group = group
     self.logFile = LogFile(self.name+".log",group.groupDir,maxRotatedFiles=10)
+    self.patchLogFile = LogFile(self.name+".plog",group.groupDir,rotateLength=1000000000,maxRotatedFiles=3)#100M
     self.status = PROC_STATUS.STOP
     self.endTime = None
 
   def connectionMade(self):
     self.status = PROC_STATUS.RUN
-    self._writeLog("[processStarted] at:%s\n"%(datetime.now()))
+    self._writeLog("[processStarted] at:%s%s"%(datetime.now().strftime(TIME_FORMAT),CR))
   def _writeLog(self,data):
     self.logFile.write(data) 
+  def logPatch(self,fname):
+    self.patchLogFile.write("%s,%s%s"%(fname,datetime.now().strftime(TIME_FORMAT),CR))
+
   def outReceived(self, data):
     self._writeLog(data)
   def errReceived(self, data):
-    self._writeLog("[ERROR DATA]:"+data)
+    self._writeLog("[ERROR DATA %s]:%s%s"%(datetime.now().strftime(TIME_FORMAT),data,CR))
   def childDataReceived(self, childFD, data):
     self._writeLog(data)
-
   def inConnectionLost(self):
     pass
   def outConnectionLost(self):
@@ -105,11 +134,11 @@ class LocalProcess(protocol.ProcessProtocol):
   def processEnded(self, reason):
     self.endTime = datetime.now()
     if reason.value.exitCode is None:
-      self._writeLog("[processEnded] code is None,info:%s\n"% (reason)) 
+      self._writeLog("[processEnded] code is None,info:%s%s"% (reason,CR))
     elif reason.value.exitCode != 0 :
-      self._writeLog("[processEnded] code:%d,info:%s\n"% (reason.value.exitCode,reason)) 
+      self._writeLog("[processEnded] code:%d,info:%s%s"% (reason.value.exitCode,reason,CR))
     self.status = PROC_STATUS.STOP
-    self._writeLog("[processEnded] at:%s\n"%(self.endTime))
+    self._writeLog("[processEnded] at:%s%s"%(self.endTime.strftime(TIME_FORMAT),CR))
 
   def signal(self,signalName):
     self.transport.signalProcess(signalName.name)

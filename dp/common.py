@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*- 
 
 from twisted.python.constants import NamedConstant, Names
-import os
+import os,platform
 
 _datarootDir = "."
 
@@ -14,6 +14,9 @@ selfFileSet = [
   {'local':{'dir':dpDir},'remote':{'dir':'selfupdate','filters':['*.py']}},
   {'local':{'dir':os.path.join(dpDir,'client')},'remote':{'dir':'selfupdate/client','filters':['*.py']}},
   ]
+
+TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+CR = '\r\n' if platform.platform().find("Windows")==0 else '\n'
 
 def changeDpDir(newDir):
   global _datarootDir
@@ -58,26 +61,27 @@ class LPConfig(object):
     for k in PS_BASIC:
       v = self.__getattr__(d)
       if v is not None:
-        result.add((k,v))
+        result.append((k,v))
     return result
   def restartValue(self):
     return self.confDict.get('restart',{'enable':True,'periodMinutes':5}).iteritems()
   def monitorValue(self):
     result = []
     mValue =  self.confDict.get('monitor',{'enable':False})
-    result.add(('enable',mValue.get('enable')))
+    result.append(('enable',mValue.get('enable')))
     if mValue.has_key('log'):
       lDict = mValue.get('log')
       if lDict.get('file') is not None and lDict.get('keyword') is not None:
-        result.add(('log',[('file',lDict.get('file')),('keyword',lDict.get('keyword')),\
+        result.append(('log',[('file',lDict.get('file')),('keyword',lDict.get('keyword')),\
           ('action',lDict.get('action','KILL'))]))
     return result
   def fileUpdateInfo(self):
     result = []
     fValue =  self.confDict.get('fileUpdate')
-    fileSet = fValue.get('fileSet')
-    if fileSet :
-      result.add(('restart',fValue.get('restart',True)))
-      result.add(('fileSet',fileSet))
+    if fValue:
+      fileSet = fValue.get('fileSet')
+      if fileSet :
+        result.append(('restart',fValue.get('restart',True)))
+        result.append(('fileSet',fileSet))
     return result
 

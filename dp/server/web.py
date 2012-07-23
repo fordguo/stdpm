@@ -3,6 +3,7 @@
 from twisted.web.resource import Resource
 from twisted.web.static import File
 from twisted.web.server import NOT_DONE_YET
+from twisted.internet import reactor
 
 from zope.interface import Interface, Attribute, implements
 from twisted.python.components import registerAdapter
@@ -10,6 +11,7 @@ from twisted.web.server import Session
 
 import os,tempfile,json
 import time
+import yaml
 from mako.template import Template
 from mako.lookup import TemplateLookup
 
@@ -20,7 +22,6 @@ from dp.server.main import getDb,clientIpDict,getStatus,isRun,countStop,uniquePr
 serverDir = os.path.join(dpDir,'server')
 
 templatePath = os.path.join(serverDir,'web','template','')
-print templatePath
 webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',output_encoding='utf-8',\
   module_directory=tempfile.gettempdir())
 
@@ -56,6 +57,8 @@ class RootResource(Resource):
     elif name=='clientProcInfo':
       self._changeActiveCss('procActiveCss')
       return ProcessInfoResource()
+    elif name=='procOp':
+      return ProcOpResource()
     else:
       self._changeActiveCss('procActiveCss')
       return ProcessResource()
@@ -72,12 +75,13 @@ class AboutResource(Resource):
     Resource.__init__(self)
   def render_GET(self, request):
     return getTemplateContent('about',**activeCssDict)
+
 class ClientOpResource(Resource):
   def render_POST(self, request):
     cmdStr = request.args['op'][0]
     ip = request.args.get('ip')[0]
     clientProtocolDict[ip].sendJson(json.dumps({'action':'clientOp','value':cmdStr}))
-    msg = 'Send Command %s to %s'%(cmdStr,ip)
+    msg = 'Send command %s to %s'%(cmdStr,ip)
     flash = IFlash(request.getSession())
     flash.msg = msg
     time.sleep(0.5)
@@ -88,12 +92,12 @@ class ClientResource(Resource):
   def __init__(self):
     Resource.__init__(self)
   def render_GET(self, request):
+    flash = IFlash(request.getSession())
     clientDict = {}
     for key,val in clientIpDict.iteritems():
       status = getStatus(key)
       clientDict[key] = {'version':val.get('version','N/A'),'status':status['status'],\
       'lastConnected':fmtDate(status['lastUpdated']),'lastPatched':'N/A'}
-    flash = IFlash(request.getSession())
     request.write(getTemplateContent('client',clientDict=clientDict,msg=flash.msg,canPatch=checkPatchDir(selfFileSet),**activeCssDict))
     finishRequest(None,request,flash)
     return NOT_DONE_YET
@@ -108,6 +112,7 @@ class ProcessResource(Resource):
       clientSideArgs['countList'].append(countStop(ip))
     return clientSideArgs
   def render_GET(self, request):
+    flash = IFlash(request.getSession())
     currentIp = request.args.get('ip')
     if currentIp is None and len(clientIpDict)>0:
       currentIp = iter(clientIpDict.keys()).next()
@@ -119,7 +124,7 @@ class ProcessResource(Resource):
         grpName,procName = [row[0],row[1]]
         uniName = uniqueProcName(currentIp,grpName,procName)
         procStatus = getStatus(uniName)
-        procRow = [procName,procStatus['status'],fmtDate(procStatus['lastUpdated']),uniName]
+        procRow = [procName,procStatus['status'],fmtDate(procStatus['lastUpdated']),uniName,'N/A' if row[2] is None else row[2]]
         procGrp =  procDict.get(grpName)
         if procGrp is None:
           procGrp = [procRow]
@@ -127,8 +132,42 @@ class ProcessResource(Resource):
         else:
           procGrp.append(procRow)
       request.write(getTemplateContent('proc',clientSideArgs=self._initClientSideArgs(currentIp),\
-        procDict=procDict,currentIp=currentIp,**activeCssDict))
-    getDb().runQuery('SELECT procGroup,procName FROM Process WHERE clientIp = ?',[currentIp]).addCallback(procList).addBoth(finishRequest,request)
+        procDict=procDict,currentIp=currentIp,msg=flash.msg,**activeCssDict))
+      finishRequest(None,request,flash)
+    getDb().runQuery('SELECT procGroup,procName,lastPatchTime FROM Process WHERE clientIp = ?',[currentIp]).addCallback(procList).addBoth(finishRequest,request)
+    return NOT_DONE_YET
+
+class ProcOpResource(Resource):
+  def render_GET(self,request):
+    name = request.args.get('name')[0]
+    return "<h4>%s</h4><p>Hello log"%name
+  def render_POST(self, request):
+    cmdStr = request.args['op'][0]
+    name = request.args.get('name')[0]
+    print name
+    names = name.split(":")
+    ip = names[0]
+    msg = '%s remote://%s/%s/%s'%(cmdStr,ip,names[1],names[2])
+    def delayRender(msg):
+      flash = IFlash(request.getSession())
+      flash.msg = msg
+      request.redirect('/proc')
+      finishRequest(None,request)
+    if cmdStr=='Restart':
+      clientProtocolDict[ip].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
+      reactor.callLater(0.5,delayRender,msg)
+    elif cmdStr == 'Patch':
+      def procInfo(result,msg):
+        yamContent = result[0][0]
+        lp = LPConfig(yaml.load(yamContent))
+        print lp
+        if lp.fileUpdateInfo():
+          clientProtocolDict[ip].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
+        else:
+          msg += " invalid"
+        delayRender(msg)
+      getDb().runQuery('SELECT procInfo FROM Process WHERE clientIp = ? and procGroup = ? and procName = ?',\
+      [ip,names[1],names[2]]).addCallback(procInfo,msg)
     return NOT_DONE_YET
 
 class ProcessInfoResource(ProcessResource):

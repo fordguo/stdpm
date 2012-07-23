@@ -6,24 +6,30 @@ from twisted.internet import reactor
 from twisted.protocols.ftp import FTPClient,FTPFileListProtocol
 
 import os,shutil,fnmatch
-import zlib
+import zlib,json
 from datetime import datetime
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
 
-from dp.common import getDatarootDir,checkDir
+from dp.common import getDatarootDir,checkDir,TIME_FORMAT
+from dp.client.process import restartProc,getLPConfig,patchLog
 
 cacheDir = os.path.join(getDatarootDir(),'data','filecache','')
 checkDir(cacheDir)
 
 class BufferFileTransferProtocol(Protocol):
-  def __init__(self,fname,localInfo):
+  def __init__(self,fname,localInfo,psGroup,psName,isLast,restart,client):
     self.fname=fname
+    self.psGroup = psGroup
+    self.psName = psName
+    self.restart = restart
+    self.isLast = isLast
     self.localInfo = localInfo
     self.tmpName=os.path.join(cacheDir,fname+'.tmp')
     self.fileInst=open(self.tmpName,'wb+')
+    self.client = client
   def dataReceived(self,data):
     self.fileInst.write(data)
   def connectionLost(self,reason=ConnectionDone):
@@ -50,6 +56,15 @@ class BufferFileTransferProtocol(Protocol):
           shutil.copy(cacheFile,os.paht.join(localDir,'%s.new'%(cacheFile)))
         else:
           shutil.copy(cacheFile,localDir)
+        if self.psGroup:
+          patchLog(self.psGroup,self.psName,self.fname)
+        if self.isLast:
+          if self.restart and self.psGroup is not None:
+            restartProc(self.psGroup,self.psName)
+          if self.client is not None:
+            self.client.sendJson(json.dumps({'action':'patchFinish','group':self.psGroup,'name':self.psName,\
+            'datetime':datetime.now().strftime(TIME_FORMAT)}))
+
 
 def fail(error):
   print 'Ftp failed.  Error was:',error
@@ -57,11 +72,12 @@ def fail(error):
 def echoResult(result):
   print "echoResult",result
 
-def downloadFiles(config,fileset=[]):
+def downloadFiles(config,fileset=[],psGroup=None,psName=None,restart=False,client=None):
   creator = ClientCreator(reactor, FTPClient,config['ftpUser'],config['ftpPassword'])
-  creator.connectTCP(config['server'],config['ftpPort']).addCallback(connectionMade,fileset).addErrback(fail)
+  creator.connectTCP(config['server'],config['ftpPort']).addCallback(connectionMade,fileset,\
+    psGroup,psName,restart,client).addErrback(fail)
 
-def connectionMade(ftpClient,fileset):
+def connectionMade(ftpClient,fileset,psGroup,psName,restart,client):
   lastLen = len(fileset)-1
   for n,fileInfo in enumerate(fileset):
     remoteInfo = fileInfo.get('remote')
@@ -75,16 +91,18 @@ def connectionMade(ftpClient,fileset):
     remoteFilters = remoteInfo.get('filters',['*']) 
     proto = FTPFileListProtocol()
     d = ftpClient.list(remoteDir, proto)
-    d.addCallbacks(processFiles, fail, callbackArgs=(ftpClient,proto,remoteDir,remoteFilters,localInfo,n==lastLen))
+    d.addCallbacks(processFiles, fail, callbackArgs=(ftpClient,proto,remoteDir,remoteFilters,localInfo,\
+      n==lastLen,psGroup,psName,restart,client))
 
-def processFiles(result,ftpClient,proto,remoteDir,remoteFilters,localInfo,isLast):
+def processFiles(result,ftpClient,proto,remoteDir,remoteFilters,localInfo,isLast,psGroup,psName,restart,client):
   d = None
   for f in proto.files:
     if f['filetype']=='-':
       fName = f['filename']
       for fl in remoteFilters:
         if fnmatch.fnmatch(fName,fl):
-          d = ftpClient.retrieveFile("%s/%s"%(remoteDir,fName), BufferFileTransferProtocol(fName,localInfo))
+          d = ftpClient.retrieveFile("%s/%s"%(remoteDir,fName), BufferFileTransferProtocol(fName,localInfo,\
+            psGroup,psName,isLast,restart,client))
   if isLast and d:
     d.addCallback(lambda x,y:y.quit().addCallback(echoResult),ftpClient)
 

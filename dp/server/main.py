@@ -32,7 +32,7 @@ def init():
   def check(txn):
     res = txn.execute("SELECT * FROM sqlite_master WHERE type='table' AND name=?",['Process']).fetchone()
     if res is None:
-      txn.execute('CREATE TABLE Process(clientIp VARCHAR(64),procGroup VARCHAR(255),procName VARCHAR(255),procInfo TEXT,\
+      txn.execute('CREATE TABLE Process(clientIp VARCHAR(64),procGroup VARCHAR(255),procName VARCHAR(255),procInfo TEXT,lastPatchTime VARCHAR(255),\
         PRIMARY KEY(clientIp,procGroup,procName))')
     else:
       def initDb(result):
@@ -50,7 +50,6 @@ def checkPatchDir(fileset):
     remoteDir = remoteInfo.get('dir')
     if remoteDir is None: continue
     ftpDir = os.path.join(getDatarootDir(),'data','ftp','data','user',remoteDir)
-    print ftpDir 
     if os.path.exists(ftpDir):
       return True
   return False
@@ -119,15 +118,25 @@ class CoreServer(NetstringReceiver):
     elif action=='clientVersion':
       result = _checkIpDict(self._getIp())
       result['version'] = json['value']
+    elif action=='patchFinish':
+      db.runOperation('UPDATE Process SET lastPatchTime = ? WHERE clientIp=? and procGroup=? and procName=?',\
+      (json['datetime'],self._getIp(),json['group'],json['name'])).addCallback(lambda x:x)
     else:
       print 'unknow json:',json
   def _procName(self,value):
     return uniqueProcName(self._getIp(),value['group'],value['name'])
 
   def _processYaml(self,group,name,yamlStr):
-    db.runOperation('INSERT OR REPLACE INTO Process(clientIp,procGroup,procName,procInfo) VALUES(?,?,?,?)',
-      (self._getIp(),group,name,yamlStr)).addCallback(lambda x:x)
-
+    ip = self._getIp()
+    def checkProc(result):
+      if len(result)>0:
+        db.runOperation('UPDATE Process SET procInfo = ? where clientIp=? and procGroup=? and procName=?',\
+          (yamlStr,ip,group,name)).addCallback(lambda x:x)
+      else:
+        db.runOperation('INSERT INTO Process(clientIp,procGroup,procName,procInfo) VALUES(?,?,?,?)',\
+          (ip,group,name,yamlStr)).addCallback(lambda x:x)
+    db.runQuery('SELECT procName FROM Process where clientIp=? and procGroup=? and procName=?',(ip,group,name)).addCallback(checkProc)
+  
   def sendJson(self,string):
     self.sendString("json:"+string)
 
