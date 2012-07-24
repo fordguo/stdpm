@@ -79,7 +79,6 @@ class ProcessGroup:
     for localProc in self.locals.itervalues():
       if localProc.isRunning():
         self._stopProc(localProc,1)
-    self.locals.clear()
   def _forceStopProcess(self,localProc):
     try:
       localProc.signal(SIGNAL_NAME.KILL)
@@ -97,7 +96,6 @@ class ProcessGroup:
     if localProc and localProc.isRunning():
       localProc.status = PROC_STATUS.STOPPING
       self._stopProc(localProc,killTime)
-      del self.locals[procName]
     else:
       print 'process '+procName +' have not found or have been stopped.'
   def restartProc(self,procName,secs=1,clearCache=False):
