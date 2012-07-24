@@ -153,8 +153,8 @@ from dp.server.web import root
 def makeService(config):
   serverService = service.MultiService()
   changeDpDir(config['dataDir'])
-  internet.TCPServer(config['mainPort'], CoreServerFactory()).setServiceParent(serverService)
-  internet.TCPServer(config['ftpPort'],initFtpFactory()).setServiceParent(serverService)
-  internet.TCPServer(config['httpPort'],server.Site(root)).setServiceParent(serverService)
+  internet.TCPServer(int(config['mainPort']), CoreServerFactory()).setServiceParent(serverService)
+  internet.TCPServer(int(config['ftpPort']),initFtpFactory()).setServiceParent(serverService)
+  internet.TCPServer(int(config['httpPort']),server.Site(root)).setServiceParent(serverService)
   return serverService
 

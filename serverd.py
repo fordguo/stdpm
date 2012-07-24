@@ -29,7 +29,6 @@ def autoCheckEggs():
 
 autoCheckEggs()
 sys.path[0:0] = sysPath
-print sysPath
 if __name__ == '__main__':
   import twisted.scripts.twistd
   config.read(os.path.join(dpHome,'conf','serverd.cfg'))
