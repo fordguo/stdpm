@@ -54,7 +54,7 @@ class CoreClient(NetstringReceiver):
       value = json['value']
       if value=='Restart':
         reactor.stop()
-      elif value=='Patch':
+      elif value=='Update':
         downloadFiles(self.config,selfFileSet)
     elif action=='procOp':
       psGroup = json['grp']
@@ -62,7 +62,7 @@ class CoreClient(NetstringReceiver):
       op = json['op']
       if op=='Restart':
         restartProc(psGroup,psName)
-      elif op=='Patch':
+      elif op=='Update':
         lp = getLPConfig(psGroup,psName)
         if lp:
           updateInfo = lp.fileUpdateInfo()

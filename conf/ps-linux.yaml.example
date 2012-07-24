@@ -20,9 +20,10 @@ echo 15:
       - local:
           dir: .
           restartRename:
+          clearCaches: []
         remote: 
           dir: .
-          filters: []
+          filters: ['*']
 test :
   args: ['server']
   executable: /Users/ford/work/kindsoft/git/nnm/karaf/karaf-custom/target/assembly/bin/karaf

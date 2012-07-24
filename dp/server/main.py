@@ -32,7 +32,7 @@ def init():
   def check(txn):
     res = txn.execute("SELECT * FROM sqlite_master WHERE type='table' AND name=?",['Process']).fetchone()
     if res is None:
-      txn.execute('CREATE TABLE Process(clientIp VARCHAR(64),procGroup VARCHAR(255),procName VARCHAR(255),procInfo TEXT,lastPatchTime VARCHAR(255),\
+      txn.execute('CREATE TABLE Process(clientIp VARCHAR(64),procGroup VARCHAR(255),procName VARCHAR(255),procInfo TEXT,fileUpdateTime VARCHAR(255),\
         PRIMARY KEY(clientIp,procGroup,procName))')
     else:
       def initDb(result):
@@ -43,7 +43,7 @@ def init():
       db.runQuery('SELECT clientIp,procGroup,procName  FROM Process').addCallback(initDb)
   db.runInteraction(check).addCallback(lambda x:x)
 
-def checkPatchDir(fileset):
+def checkUpdateDir(fileset):
   for f in fileset:
     remoteInfo = f.get('remote')
     if remoteInfo is None: continue
@@ -118,8 +118,8 @@ class CoreServer(NetstringReceiver):
     elif action=='clientVersion':
       result = _checkIpDict(self._getIp())
       result['version'] = json['value']
-    elif action=='patchFinish':
-      db.runOperation('UPDATE Process SET lastPatchTime = ? WHERE clientIp=? and procGroup=? and procName=?',\
+    elif action=='updateFinish':
+      db.runOperation('UPDATE Process SET fileUpdateTime = ? WHERE clientIp=? and procGroup=? and procName=?',\
       (json['datetime'],self._getIp(),json['group'],json['name'])).addCallback(lambda x:x)
     else:
       print 'unknow json:',json

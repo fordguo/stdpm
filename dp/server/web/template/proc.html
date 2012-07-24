@@ -15,8 +15,8 @@
 			<th>Group</th>
 			<th>Name</th>
 			<th>Status</th>
-			<th>Last Updated</th>
-			<th>Last Patched</th>
+			<th>Last Shaked</th>
+			<th>File Updated</th>
 			% if isRun(currentIp):
 			<th>Operations</th>
 			% endif
@@ -46,7 +46,7 @@
 				<form class="form-inline" style="margin-bottom:2px;" method="POST" action="/procOp">
 				<input type="hidden" name="name" value="${procRow[3]}"></input>
 				<input class="btn" type="submit" name="op" value="Restart"></input>
-				<input class="btn" type="submit" name="op" value="Patch"></input>
+				<input class="btn" type="submit" name="op" value="Update"></input>
 				<a class="btn" data-toggle="modal" href="/procOp?name=${procRow[3]}">Console</a>
 				</form>
 			</td>

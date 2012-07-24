@@ -16,7 +16,7 @@
 			<th>Version</th>
 			<th>Status</th>
 			<th>Last Conneted</th>
-			<th>Last Patched</th>
+			<th>File Updated</th>
 			<th>Operations</th>
 		<tr>
 	</thead>
@@ -35,14 +35,14 @@
 				</span>
 			</td>
 			<td>${value['lastConnected']}</td>
-			<td>${value['lastPatched']}</td>
+			<td>${value['fileUpdated']}</td>
 			<td>
 				% if  isRun(key):
 				<form class="form-inline" style="margin-bottom:2px;" method="POST" action="/clientOp">
 				<input type="hidden" name="ip" value="${key}"></input>
 				<input class="btn" type="submit" name="op" value="Restart"></input>
-				% if canPatch:
-				<input class="btn" type="submit" name="op" value="Patch"></input>
+				% if canUpdate:
+				<input class="btn" type="submit" name="op" value="Update"></input>
 				% endif
 				</form>
 				% endif

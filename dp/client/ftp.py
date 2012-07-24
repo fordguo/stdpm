@@ -14,7 +14,7 @@ except ImportError:
     from StringIO import StringIO
 
 from dp.common import getDatarootDir,checkDir,TIME_FORMAT
-from dp.client.process import restartProc,getLPConfig,patchLog
+from dp.client.process import restartProc,getLPConfig,updateLog
 
 cacheDir = os.path.join(getDatarootDir(),'data','filecache','')
 checkDir(cacheDir)
@@ -57,12 +57,12 @@ class BufferFileTransferProtocol(Protocol):
         else:
           shutil.copy(cacheFile,localDir)
         if self.psGroup:
-          patchLog(self.psGroup,self.psName,self.fname)
+          updateLog(self.psGroup,self.psName,self.fname)
         if self.isLast:
           if self.restart and self.psGroup is not None:
             restartProc(self.psGroup,self.psName)
           if self.client is not None:
-            self.client.sendJson(json.dumps({'action':'patchFinish','group':self.psGroup,'name':self.psName,\
+            self.client.sendJson(json.dumps({'action':'updateFinish','group':self.psGroup,'name':self.psName,\
             'datetime':datetime.now().strftime(TIME_FORMAT)}))
 
 

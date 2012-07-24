@@ -17,7 +17,7 @@ from mako.lookup import TemplateLookup
 
 from dp.common import LPConfig,dpDir,selfFileSet
 from dp.server.main import getDb,clientIpDict,getStatus,isRun,countStop,uniqueProcName,\
-  splitProcName,clientProtocolDict,checkPatchDir
+  splitProcName,clientProtocolDict,checkUpdateDir
 
 serverDir = os.path.join(dpDir,'server')
 
@@ -97,8 +97,8 @@ class ClientResource(Resource):
     for key,val in clientIpDict.iteritems():
       status = getStatus(key)
       clientDict[key] = {'version':val.get('version','N/A'),'status':status['status'],\
-      'lastConnected':fmtDate(status['lastUpdated']),'lastPatched':'N/A'}
-    request.write(getTemplateContent('client',clientDict=clientDict,msg=flash.msg,canPatch=checkPatchDir(selfFileSet),**activeCssDict))
+      'lastConnected':fmtDate(status['lastUpdated']),'fileUpdated':'N/A'}
+    request.write(getTemplateContent('client',clientDict=clientDict,msg=flash.msg,canUpdate=checkUpdateDir(selfFileSet),**activeCssDict))
     finishRequest(None,request,flash)
     return NOT_DONE_YET
 
@@ -134,7 +134,7 @@ class ProcessResource(Resource):
       request.write(getTemplateContent('proc',clientSideArgs=self._initClientSideArgs(currentIp),\
         procDict=procDict,currentIp=currentIp,msg=flash.msg,**activeCssDict))
       finishRequest(None,request,flash)
-    getDb().runQuery('SELECT procGroup,procName,lastPatchTime FROM Process WHERE clientIp = ?',[currentIp]).addCallback(procList).addBoth(finishRequest,request)
+    getDb().runQuery('SELECT procGroup,procName,fileUpdateTime FROM Process WHERE clientIp = ?',[currentIp]).addCallback(procList).addBoth(finishRequest,request)
     return NOT_DONE_YET
 
 class ProcOpResource(Resource):
@@ -156,7 +156,7 @@ class ProcOpResource(Resource):
     if cmdStr=='Restart':
       clientProtocolDict[ip].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
       reactor.callLater(0.5,delayRender,msg)
-    elif cmdStr == 'Patch':
+    elif cmdStr == 'Update':
       def procInfo(result,msg):
         yamContent = result[0][0]
         lp = LPConfig(yaml.load(yamContent))
