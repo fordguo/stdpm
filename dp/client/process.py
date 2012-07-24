@@ -86,7 +86,7 @@ class ProcessGroup:
       localProc.signal(SIGNAL_NAME.KILL)
     else:
       print 'process '+procName +' have not found or have been stopped.'
-  def restartProc(self,procName,secs=1):
+  def restartProc(self,procName,secs=1,clearCache=False):
     localProc = self.locals[procName]
     if localProc and localProc.isRunning():
       self.stopProc(procName)

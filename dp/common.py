@@ -81,7 +81,7 @@ class LPConfig(object):
     if fValue:
       fileSet = fValue.get('fileSet')
       if fileSet :
-        result.append(('restart',fValue.get('restart',True)))
+        result.append(('restart',fValue.get('restart',{'enable':True})))
         result.append(('fileSet',fileSet))
     return result
 

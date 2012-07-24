@@ -1,5 +1,5 @@
 echo 15:
-  args: ["hello"]
+  args: ["15"]
   executable: /bin/echo
   group: null
   path: null
@@ -15,12 +15,14 @@ echo 15:
       keyword: null
       action: KILL #KILL,TERM,INT
   fileUpdate:
-    restart: true
+    restart: 
+      enable: true
+      clearCaches: []
+      sleep: 1
     fileSet:
       - local:
           dir: .
-          restartRename:
-          clearCaches: []
+          restartRename:          
         remote: 
           dir: .
           filters: ['*']
