@@ -16,7 +16,7 @@ config = ConfigParser.ConfigParser()
 def autoCheckEggs():
   global eggs
   dpEggPath = os.path.join(dpHome,'eggs','')#sys.path[0]
-  dpEggs = [glob.glob("%s%s*%s*egg"%(dpEggPath,name,pyver)) for name in eggs]
+  dpEggs = [glob.glob("%s%s-*%s*egg"%(dpEggPath,name,pyver)) for name in eggs]
   for eggs in dpEggs:
     bestEgg = None
     for egg in eggs:

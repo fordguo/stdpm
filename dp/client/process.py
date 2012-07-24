@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*- 
 
 
-from twisted.internet import reactor,protocol
+from twisted.internet import error,reactor,protocol
 from twisted.python.logfile import DailyLogFile,LogFile
 from datetime import datetime
 from dp.common import SIGNAL_NAME,PROC_STATUS,getDatarootDir,dpDir,LPConfig,TIME_FORMAT,CR
@@ -78,12 +78,26 @@ class ProcessGroup:
   def stop(self):
     for localProc in self.locals.itervalues():
       if localProc.isRunning():
-        localProc.signal(SIGNAL_NAME.KILL)  
-  def stopProc(self,procName):
+        self._stopProc(localProc,1)
+    self.locals.clear()
+  def _forceStopProcess(self,localProc):
+    try:
+      localProc.signal(SIGNAL_NAME.KILL)
+    except error.ProcessExitedAlready:
+      pass
+  def _stopProc(self,localProc,killTime):
+    try:
+      localProc.signal(SIGNAL_NAME.TERM)
+    except error.ProcessExitedAlready:
+      pass
+    else:
+      reactor.callLater(killTime,self._forceStopProcess,localProc)
+  def stopProc(self,procName,killTime=3):
     localProc = self.locals[procName]
     if localProc and localProc.isRunning():
       localProc.status = PROC_STATUS.STOPPING
-      localProc.signal(SIGNAL_NAME.KILL)
+      self._stopProc(localProc,killTime)
+      del self.locals[procName]
     else:
       print 'process '+procName +' have not found or have been stopped.'
   def restartProc(self,procName,secs=1,clearCache=False):
@@ -96,6 +110,7 @@ class ProcessGroup:
     
 class LocalProcess(protocol.ProcessProtocol):
   def __init__(self, name,group):
+    self.orgName = name
     self.name = "".join([x for x in name if x.isalnum()])
     self.group = group
     self.logFile = LogFile(self.name+".log",group.groupDir,maxRotatedFiles=10)
@@ -129,9 +144,9 @@ class LocalProcess(protocol.ProcessProtocol):
   def isRunning(self):
     return self.status == PROC_STATUS.RUN
 
-  def processExited(self, reason):
+  def processExited(self,reason):
     pass
-  def processEnded(self, reason):
+  def processEnded(self,reason):
     self.endTime = datetime.now()
     if reason.value.exitCode is None:
       self._writeLog("[processEnded] code is None,info:%s"% (reason))

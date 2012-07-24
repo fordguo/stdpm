@@ -19,9 +19,7 @@ def minuteCheck():
   if client is None:return
   for procGroup in procGroupDict.itervalues():
     for name,proc in procGroup.iterStatus():
-      client.sendJson(json.dumps({'action':'procStatus','value':{'group':procGroup.name,\
-        'name':name,'status':proc.status.name}}))
-
+      client.sendProcStatus(procGroup.name,name,proc.status)
 looping = task.LoopingCall(minuteCheck)
 
 def getClient():
@@ -37,6 +35,8 @@ class CoreClient(NetstringReceiver):
     for procGroup in procGroupDict.itervalues():
       for name,procInfo in procGroup.iterMap():
         self.sendYaml("%s:%s:%s"%(procGroup.name,name.replace(':','_-_'),yaml.dump(procInfo,default_flow_style=None)))
+      for name,proc in procGroup.iterStatus():
+        client.sendProcStatus(procGroup.name,name,proc.status)
     self.sendJson(json.dumps({'action':'clientVersion','value':version}))
   def connectionLost(self, reason):
     global client
@@ -79,6 +79,10 @@ class CoreClient(NetstringReceiver):
   def sendYaml(self,string):
     self.sendString("yaml:"+string)
 
+  def sendProcStatus(self,procGroup,procName,status):
+      self.sendJson(json.dumps({'action':'procStatus','value':{'group':procGroup,\
+        'name':procName,'status':status.name}}))    
+
 class CoreClientFactory(ReconnectingClientFactory):
   def __init__(self,config):
     self.config = config
@@ -94,5 +98,9 @@ def makeService(config):
   initYaml()
   looping.start(60)
   internet.TCPClient(config['server'],int(config['port']), CoreClientFactory(config)).setServiceParent(clientService)
+  def shutdown():
+    for procGroup in procGroupDict.itervalues():
+      procGroup.stop()
+  reactor.addSystemEventTrigger("before", "shutdown", shutdown)
   return clientService
 
