@@ -6,7 +6,7 @@ from twisted.internet import reactor,task
 
 import os,json
 import yaml
-from process import procGroupDict,initYaml,restartProc,getLPConfig
+from process import procGroupDict,initYaml,restartProc,getLPConfig,registerSendStatus
 from dp.client.ftp import downloadFiles
 from dp.common import JSON,JSON_LEN,changeDpDir,selfFileSet
 
@@ -32,6 +32,7 @@ class CoreClient(NetstringReceiver):
   def connectionMade(self):
     global client
     client = self
+    registerSendStatus(self.sendProcStatus)
     for procGroup in procGroupDict.itervalues():
       for name,procInfo in procGroup.iterMap():
         self.sendYaml("%s:%s:%s"%(procGroup.name,name.replace(':','_-_'),yaml.dump(procInfo,default_flow_style=None)))
@@ -96,7 +97,7 @@ def makeService(config):
   clientService = service.MultiService()
   changeDpDir(config['dataDir'])
   initYaml()
-  looping.start(60)
+  looping.start(300)
   internet.TCPClient(config['server'],int(config['port']), CoreClientFactory(config)).setServiceParent(clientService)
   def shutdown():
     for procGroup in procGroupDict.itervalues():

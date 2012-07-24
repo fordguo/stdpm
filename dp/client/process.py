@@ -13,6 +13,11 @@ import glob
 PS_BASIC = ['executable','args','path','user','group','usePTY','childFDs']
 
 procGroupDict = {}
+sendStatusFunc = None
+
+def registerSendStatus(func):
+  global sendStatusFunc
+  sendStatusFunc = func
 
 def initYaml(yamlDir=None):
   if yamlDir is None:
@@ -78,32 +83,32 @@ class ProcessGroup:
   def stop(self):
     for localProc in self.locals.itervalues():
       if localProc.isRunning():
-        self._stopProc(localProc,1)
-  def _forceStopProcess(self,localProc):
+        self._stopProc(localProc,1,None)
+  def _forceStopProcess(self,localProc,procName,restart=False):
     try:
       localProc.signal(SIGNAL_NAME.KILL)
     except error.ProcessExitedAlready:
       pass
-  def _stopProc(self,localProc,killTime):
+    if restart:
+      self.startProc(procName)
+  def _stopProc(self,localProc,killTime,procName,restart=False):
     try:
       localProc.signal(SIGNAL_NAME.TERM)
     except error.ProcessExitedAlready:
       pass
     else:
-      reactor.callLater(killTime,self._forceStopProcess,localProc)
-  def stopProc(self,procName,killTime=3):
+      reactor.callLater(killTime,self._forceStopProcess,localProc,procName,restart)
+  def stopProc(self,procName,killTime=3,restart=False):
     localProc = self.locals[procName]
     if localProc and localProc.isRunning():
       localProc.status = PROC_STATUS.STOPPING
-      self._stopProc(localProc,killTime)
+      self._stopProc(localProc,killTime,procName,True)
     else:
       print 'process '+procName +' have not found or have been stopped.'
   def restartProc(self,procName,secs=1,clearCache=False):
     localProc = self.locals[procName]
     if localProc and localProc.isRunning():
-      self.stopProc(procName)
-      time.sleep(secs)
-    self.startProc(procName)
+      self.stopProc(procName,secs,True)
 
     
 class LocalProcess(protocol.ProcessProtocol):
@@ -119,6 +124,10 @@ class LocalProcess(protocol.ProcessProtocol):
   def connectionMade(self):
     self.status = PROC_STATUS.RUN
     self._writeLog("[processStarted] at:%s"%(datetime.now().strftime(TIME_FORMAT)))
+    global sendStatusFunc
+    if sendStatusFunc:
+      sendStatusFunc(self.group.name,self.orgName,self.status)
+
   def _writeLog(self,data):
     self.logFile.write("%s%s"%(data,CR)) 
   def logUpdate(self,fname):
@@ -152,6 +161,9 @@ class LocalProcess(protocol.ProcessProtocol):
       self._writeLog("[processEnded] code:%d,info:%s"% (reason.value.exitCode,reason))
     self.status = PROC_STATUS.STOP
     self._writeLog("[processEnded] at:%s"%(self.endTime.strftime(TIME_FORMAT)))
+    global sendStatusFunc
+    if sendStatusFunc:
+      sendStatusFunc(self.group.name,self.orgName,self.status)
 
   def signal(self,signalName):
     self.transport.signalProcess(signalName.name)
