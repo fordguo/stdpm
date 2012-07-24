@@ -74,7 +74,7 @@ def echoResult(result):
 
 def downloadFiles(config,fileset=[],psGroup=None,psName=None,restart=False,client=None):
   creator = ClientCreator(reactor, FTPClient,config['ftpUser'],config['ftpPassword'])
-  creator.connectTCP(config['server'],config['ftpPort']).addCallback(connectionMade,fileset,\
+  creator.connectTCP(config['server'],int(config['ftpPort'])).addCallback(connectionMade,fileset,\
     psGroup,psName,restart,client).addErrback(fail)
 
 def connectionMade(ftpClient,fileset,psGroup,psName,restart,client):

@@ -30,3 +30,6 @@ pip-log.txt
 tmp
 *.pid
 data
+clientd.cfg
+serverd.cfg
+ps-linux.yaml

@@ -7,7 +7,6 @@ class Options(usage.Options):
     ['server', 'h','localhost'],
     ['port', 'p',56024],
     ['dataDir','d','.'],
-    ['confDir','c','conf'],
     ['ftpPort', 'f',56021],
     ['ftpUser','u','user'],
     ['ftpPassword','P','trunksoft']

@@ -91,8 +91,8 @@ from twisted.application import internet, service
 def makeService(config):
   clientService = service.MultiService()
   changeDpDir(config['dataDir'])
-  initYaml(config['confDir'])
-  looping.start(10)
-  internet.TCPClient(config['server'],config['port'], CoreClientFactory(config)).setServiceParent(clientService)
+  initYaml()
+  looping.start(60)
+  internet.TCPClient(config['server'],int(config['port']), CoreClientFactory(config)).setServiceParent(clientService)
   return clientService
 

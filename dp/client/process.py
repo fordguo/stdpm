@@ -4,7 +4,7 @@
 from twisted.internet import reactor,protocol
 from twisted.python.logfile import DailyLogFile,LogFile
 from datetime import datetime
-from dp.common import SIGNAL_NAME,PROC_STATUS,getDatarootDir,LPConfig,TIME_FORMAT,CR
+from dp.common import SIGNAL_NAME,PROC_STATUS,getDatarootDir,dpDir,LPConfig,TIME_FORMAT,CR
 
 import os,time
 import yaml
@@ -16,7 +16,7 @@ procGroupDict = {}
 
 def initYaml(yamlDir=None):
   if yamlDir is None:
-    yamlDir = os.path.join(getDatarootDir(),'conf')
+    yamlDir = os.path.join(dpDir,'..','conf')
   files = glob.glob(os.path.join(yamlDir,'*.yaml'))
   for f in files:
     pg = ProcessGroup(f)

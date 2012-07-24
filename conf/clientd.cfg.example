@@ -1,0 +1,5 @@
+[basic]
+server=localhost
+port=56024
+confDir=conf
+ftpPort=56021

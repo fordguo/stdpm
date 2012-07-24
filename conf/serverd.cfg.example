@@ -1,0 +1,4 @@
+[basic]
+mainPort=56024
+httpPort=56080
+ftpPort=56021
