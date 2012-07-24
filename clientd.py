@@ -31,18 +31,8 @@ autoCheckEggs()
 sys.path[0:0] = sysPath
 if __name__ == '__main__':
   import twisted.scripts.twistd
-  from twisted.internet import reactor,protocol
-  class LocalProcess(protocol.ProcessProtocol):
-    def __init__(self):
-      pass
-    def processEnded(self, reason):
-      print 'processEnded',reason
-      reactor.spawnProcess(LocalProcess(),conf.executable, conf.execArgs)
-
   config.read(os.path.join(dpHome,'conf','clientd.cfg'))
-
-  sys.argv = sys.argv[:1]+['-l','clientd.log','dpclient','-h',config.get('basic','server'),\
-    '-p',config.getint('basic','port'),'-f',config.getint('basic','ftpPort')]
-  reactor.spawnProcess(LocalProcess(),sys.executable,[sys.executable,'-c',\
-    'import sys,twisted.scripts.twistd;%s;twisted.scripts.twistd.run()'%args],)
+  args = "sys.path[0:0]=%s;import twisted.scripts.twistd;sys.argv=sys.argv[:1]+['-n','--logfile','clientd.log','--pidfile','clientd.pid','dpclient','-h','%s','-p',%d,'-f',%d]"%(
+    sysPath,config.get('basic','server'),config.getint('basic','port'),config.getint('basic','ftpPort'))
+  sys.argv=sys.argv[:1]+['procmon','-M',60,sys.executable,'-c','import sys;%s;twisted.scripts.twistd.run()'%args]
   twisted.scripts.twistd.run()
