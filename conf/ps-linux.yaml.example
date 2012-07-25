@@ -1,10 +1,10 @@
 echo 15:
   args: ["15"]
   executable: /bin/echo
-  group: null
+  gid: null
   path: null
   usePTY: false
-  user: null
+  uid: null
   restart:
     enable: true
     periodMinutes: 5

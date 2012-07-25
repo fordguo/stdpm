@@ -33,3 +33,4 @@ data
 clientd.cfg
 serverd.cfg
 ps-linux.yaml
+*.zip

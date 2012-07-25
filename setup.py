@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='sdpm',
-      version='1.0',
+      version='1.0.2',
       description='Smart Distributed Process Management',
       author='Ford Guo',
       author_email='agile.guo@gmail.com',

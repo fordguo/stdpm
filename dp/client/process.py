@@ -68,7 +68,7 @@ class ProcessGroup:
     conf = LPConfig(procInfo)
     self.locals[name] = localProc
     reactor.spawnProcess(localProc,conf.executable, conf.execArgs,conf.env,\
-      conf.path,conf.user,conf.group,conf.usePTY,conf.childFDs)
+      conf.path,conf.uid,conf.gid,conf.usePTY,conf.childFDs)
   def startProc(self,procName):
     localProc = self.locals[procName]
     if localProc and not localProc.isRunning():
