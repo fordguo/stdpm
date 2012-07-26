@@ -17,7 +17,7 @@ from mako.lookup import TemplateLookup
 
 from dp.common import LPConfig,dpDir,selfFileSet
 from dp.server.main import getDb,clientIpDict,getStatus,isRun,countStop,uniqueProcName,\
-  splitProcName,clientProtocolDict,checkUpdateDir
+  splitProcName,checkUpdateDir
 
 serverDir = os.path.join(dpDir,'server')
 
@@ -80,7 +80,7 @@ class ClientOpResource(Resource):
   def render_POST(self, request):
     cmdStr = request.args['op'][0]
     ip = request.args.get('ip')[0]
-    clientProtocolDict[ip].sendJson(json.dumps({'action':'clientOp','value':cmdStr}))
+    clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'clientOp','value':cmdStr}))
     msg = 'Send command %s to %s'%(cmdStr,ip)
     flash = IFlash(request.getSession())
     flash.msg = msg
@@ -154,7 +154,7 @@ class ProcOpResource(Resource):
       request.redirect('/proc')
       finishRequest(None,request)
     if cmdStr=='Restart':
-      clientProtocolDict[ip].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
+      clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
       reactor.callLater(0.5,delayRender,msg)
     elif cmdStr == 'Update':
       def procInfo(result,msg):
@@ -162,7 +162,7 @@ class ProcOpResource(Resource):
         lp = LPConfig(yaml.load(yamContent))
         print lp
         if lp.fileUpdateInfo():
-          clientProtocolDict[ip].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
+          clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
         else:
           msg += " invalid"
         delayRender(msg)

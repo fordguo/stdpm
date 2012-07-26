@@ -3,6 +3,7 @@ echo 15:
   executable: /bin/echo
   gid: null
   path: null
+  priority: 50
   usePTY: false
   uid: null
   restart:

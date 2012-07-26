@@ -42,7 +42,7 @@ class BufferFileTransferProtocol(Protocol):
       changed = False
       if os.path.exists(cacheFile):
         if not crcCheck(self.tmpName,cacheFile):
-          os.rename(cacheFile,"%s_%s"%(datetime.now().strftime('%Y%m%d-%H%M%S'),cacheFile))
+          os.rename(cacheFile,os.path.join(cacheDir,"%s_%s"%(datetime.now().strftime('%Y%m%d-%H%M%S'),self.fname)))
           changed = True
         else:
           os.remove(self.tmpName)
@@ -58,6 +58,8 @@ class BufferFileTransferProtocol(Protocol):
           shutil.copy(cacheFile,localDir)
         if self.psGroup:
           updateLog(self.psGroup,self.psName,self.fname)
+        else:
+          clientUpdateLog(self.fName)
         if self.isLast:
           if self.restart.get('enable',True) and self.psGroup is not None:
             for cache in self.restart.get('clearCaches',[]):
@@ -74,7 +76,7 @@ def fail(error):
 def echoResult(result):
   print "echoResult",result
 
-def downloadFiles(config,fileset=[],psGroup=None,psName=None,restart=False,client=None):
+def downloadFiles(config,fileset=[],psGroup=None,psName=None,restart={},client=None):
   creator = ClientCreator(reactor, FTPClient,config['ftpUser'],config['ftpPassword'])
   creator.connectTCP(config['server'],int(config['ftpPort'])).addCallback(connectionMade,fileset,\
     psGroup,psName,restart,client).addErrback(fail)

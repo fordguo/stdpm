@@ -43,6 +43,12 @@ def getLPConfig(psGroup,psName):
       return LPConfig(procInfo)
   return None
 
+def _updateLog(logFd,fname):
+  logFd.write("%s,%s%s"%(fname,datetime.now().strftime(TIME_FORMAT),CR))
+_clientUpdateLogFile = os.path.join(getDatarootDir(),'data','clientUpdateLog.ulog')
+def clientUpdateLog(fname):
+  with open(_clientUpdateLogFile,'w+') as f:
+    _updateLog(f,fname)
 def updateLog(psGroup,psName,fname):
   if psGroup is None: return
   pg = procGroupDict.get(psGroup)
@@ -55,7 +61,7 @@ class ProcessGroup:
   def __init__(self,yamlFile):
     fileName = os.path.basename(yamlFile)
     self.name = os.path.splitext(fileName)[0]
-    self.groupDir = dirName= os.path.join(getDatarootDir(),'data','ps',self.name)
+    self.groupDir = dirName = os.path.join(getDatarootDir(),'data','ps',self.name)
     if not os.path.exists( dirName):
       os.makedirs(dirName)
     self.procsMap = yaml.load(file(yamlFile))
@@ -135,7 +141,7 @@ class LocalProcess(protocol.ProcessProtocol):
   def _writeLog(self,data):
     self.logFile.write("%s%s"%(data,CR)) 
   def logUpdate(self,fname):
-    self.updateLogFile.write("%s,%s%s"%(fname,datetime.now().strftime(TIME_FORMAT),CR))
+    _updateLog(self.self.updateLogFile,fname)
 
   def outReceived(self, data):
     self._writeLog(data)

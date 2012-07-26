@@ -19,7 +19,6 @@ DATA_DIR="data"
 db = None 
 resourceDict = {}
 clientIpDict = {}
-clientProtocolDict = {}
 
 YAML = 'yaml:'
 YAML_LEN = len(YAML)
@@ -35,8 +34,7 @@ def init():
   def check(txn):
     res = txn.execute("SELECT * FROM sqlite_master WHERE type='table' AND name=?",['Process']).fetchone()
     if res is None:
-      txn.execute('CREATE TABLE Process(clientIp VARCHAR(64),procGroup VARCHAR(255),procName VARCHAR(255),procInfo TEXT,fileUpdateTime VARCHAR(255),\
-        PRIMARY KEY(clientIp,procGroup,procName))')
+      txn.execute('CREATE TABLE Process(clientIp VARCHAR(64),procGroup VARCHAR(255),procName VARCHAR(255),procInfo TEXT,PRIMARY KEY(clientIp,procGroup,procName))')
     else:
       def initDb(result):
         for res in result:
@@ -92,12 +90,11 @@ class CoreServer(NetstringReceiver):
   def connectionMade(self):
     clientIp = self._getIp()
     resourceDict[clientIp] = {'status':PROC_STATUS.RUN,"lastUpdated":datetime.now()}
-    clientProtocolDict[clientIp] = self
-    _checkIpDict(clientIp)
+    _checkIpDict(clientIp)['protocol'] = self
   def connectionLost(self, reason):
     clientIp = self._getIp()
     del resourceDict[clientIp]
-    del clientProtocolDict[clientIp]
+    checkIpDict(clientIp)['protocol'] = None
 
   def stringReceived(self, string):
     if string.startswith(JSON):
