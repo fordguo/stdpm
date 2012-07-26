@@ -11,7 +11,7 @@ import json
 
 from dp.common import PROC_STATUS,getDatarootDir,checkDir,JSON,JSON_LEN,changeDpDir,selfFileSet,dpDir
 
-version = "1.0.1"
+version = "1.0.2"
 
 DEFAULT_INVALID = {'status':PROC_STATUS.STOP,'lastUpdated':None}
 DATA_DIR="data"
@@ -23,6 +23,9 @@ clientProtocolDict = {}
 
 YAML = 'yaml:'
 YAML_LEN = len(YAML)
+
+TXT = 'txt:'
+TXT_LEN = len(TXT)
 
 def init():
   global db

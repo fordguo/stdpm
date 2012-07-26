@@ -60,6 +60,8 @@ class BufferFileTransferProtocol(Protocol):
           updateLog(self.psGroup,self.psName,self.fname)
         if self.isLast:
           if self.restart.get('enable',True) and self.psGroup is not None:
+            for cache in self.restart.get('clearCaches',[]):
+              shutil.rmtree(cache)
             restartProc(self.psGroup,self.psName,int(self.restart.get('sleep',1)),True)
           if self.client is not None:
             self.client.sendJson(json.dumps({'action':'updateFinish','group':self.psGroup,'name':self.psName,\

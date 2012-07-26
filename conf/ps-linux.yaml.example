@@ -22,7 +22,7 @@ echo 15:
     fileSet:
       - local:
           dir: .
-          restartRename:          
+          restartRename: 
         remote: 
           dir: .
           filters: ['*']

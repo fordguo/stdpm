@@ -12,7 +12,7 @@ from dp.common import JSON,JSON_LEN,changeDpDir,selfFileSet
 
 client = None
 
-version="1.0.1"
+version="1.0.2"
 
 
 def minuteCheck():
