@@ -28,10 +28,10 @@ def initYaml(yamlDir=None):
     procGroupDict[pg.name] = pg
     pg.start()
 
-def restartProc(psGroup,psName):
+def restartProc(psGroup,psName,secs=10):
   pg = procGroupDict.get(psGroup)
   if pg:
-    pg.restartProc(psName)
+    pg.restartProc(psName,secs)
   else:
     print 'can not found process group:'+psGroup
 
@@ -90,10 +90,14 @@ class ProcessGroup:
     except error.ProcessExitedAlready:
       pass
     if restart:
+      time.sleep(3)
       self.startProc(procName)
   def _stopProc(self,localProc,killTime,procName,restart=False):
     try:
       localProc.signal(SIGNAL_NAME.TERM)
+      if restart:
+        time.sleep(killTime)
+        self.startProc(procName)
     except error.ProcessExitedAlready:
       pass
     else:
@@ -102,10 +106,10 @@ class ProcessGroup:
     localProc = self.locals[procName]
     if localProc and localProc.isRunning():
       localProc.status = PROC_STATUS.STOPPING
-      self._stopProc(localProc,killTime,procName,True)
+      self._stopProc(localProc,killTime,procName,restart)
     else:
       print 'process '+procName +' have not found or have been stopped.'
-  def restartProc(self,procName,secs=1,clearCache=False):
+  def restartProc(self,procName,secs=10):
     localProc = self.locals[procName]
     if localProc and localProc.isRunning():
       self.stopProc(procName,secs,True)
