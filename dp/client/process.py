@@ -56,6 +56,26 @@ def updateLog(psGroup,psName,fname):
     localProc = pg.locals.get(psName)
     if localProc:
       localProc.logUpdate(fname)
+def _lastUpdateTime(logFd):
+  fsize = os.path.getsize(logFd.name)
+  if fsize>100:
+    logFd.seek(-100,os.SEEK_END)
+  lines = logFd.readlines()
+  if len(lines)>0:
+    return lines[-1].split(',')[1].strip()
+  else:
+    return None
+def lastFileUpdateTime(psGroup,psName):
+  if psGroup is None and os.path.exists(_clientUpdateLogFile):
+    with open(_clientUpdateLogFile,'r') as f:
+      return _lastUpdateTime(f)
+  pg = procGroupDict.get(psGroup)
+  if pg:
+    localProc = pg.locals.get(psName)
+    if localProc:
+      with open(localProc.updateLogFile.path,'r') as f:
+        return _lastUpdateTime(f)
+  return None
 
 class ProcessGroup:
   def __init__(self,yamlFile):
@@ -141,7 +161,7 @@ class LocalProcess(protocol.ProcessProtocol):
   def _writeLog(self,data):
     self.logFile.write("%s%s"%(data,CR)) 
   def logUpdate(self,fname):
-    _updateLog(self.self.updateLogFile,fname)
+    _updateLog(self.updateLogFile,fname)
 
   def outReceived(self, data):
     self._writeLog(data)

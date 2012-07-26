@@ -29,11 +29,13 @@ activeCssDict = {'procActiveCss':'','clientActiveCss':'','aboutActiveCss':''}
 
 class IFlash(Interface):
     msg = Attribute("A temp message.")
+    alert = Attribute("A temp alert level.")
 
 class Flash(object):
     implements(IFlash)
     def __init__(self, session):
         self.msg = ''
+        self.alert = 'info'
 
 registerAdapter(Flash, Session, IFlash)
 
@@ -68,6 +70,7 @@ def finishRequest(result,request,flash=None):
     print result
   if flash:
     flash.msg = ''
+    flash.alert = 'info'
   request.finish()
 
 class AboutResource(Resource):
@@ -97,8 +100,8 @@ class ClientResource(Resource):
     for key,val in clientIpDict.iteritems():
       status = getStatus(key)
       clientDict[key] = {'version':val.get('version','N/A'),'status':status['status'],\
-      'lastConnected':fmtDate(status['lastUpdated']),'fileUpdated':'N/A'}
-    request.write(getTemplateContent('client',clientDict=clientDict,msg=flash.msg,canUpdate=checkUpdateDir(selfFileSet),**activeCssDict))
+      'lastConnected':fmtDate(status['lastUpdated']),'fileUpdated':fmtDate(status.get('fileUpdated'))}
+    request.write(getTemplateContent('client',clientDict=clientDict,flash=flash,canUpdate=checkUpdateDir(selfFileSet),**activeCssDict))
     finishRequest(None,request,flash)
     return NOT_DONE_YET
 
@@ -124,7 +127,7 @@ class ProcessResource(Resource):
         grpName,procName = [row[0],row[1]]
         uniName = uniqueProcName(currentIp,grpName,procName)
         procStatus = getStatus(uniName)
-        procRow = [procName,procStatus['status'],fmtDate(procStatus['lastUpdated']),uniName,'N/A' if row[2] is None else row[2]]
+        procRow = [procName,procStatus['status'],fmtDate(procStatus['lastUpdated']),uniName,fmtDate(procStatus.get('fileUpdated'))]
         procGrp =  procDict.get(grpName)
         if procGrp is None:
           procGrp = [procRow]
@@ -132,9 +135,9 @@ class ProcessResource(Resource):
         else:
           procGrp.append(procRow)
       request.write(getTemplateContent('proc',clientSideArgs=self._initClientSideArgs(currentIp),\
-        procDict=procDict,currentIp=currentIp,msg=flash.msg,**activeCssDict))
+        procDict=procDict,currentIp=currentIp,flash=flash,**activeCssDict))
       finishRequest(None,request,flash)
-    getDb().runQuery('SELECT procGroup,procName,fileUpdateTime FROM Process WHERE clientIp = ?',[currentIp]).addCallback(procList).addBoth(finishRequest,request)
+    getDb().runQuery('SELECT procGroup,procName FROM Process WHERE clientIp = ?',[currentIp]).addCallback(procList).addBoth(finishRequest,request)
     return NOT_DONE_YET
 
 class ProcOpResource(Resource):
@@ -148,9 +151,10 @@ class ProcOpResource(Resource):
     names = name.split(":")
     ip = names[0]
     msg = '%s remote://%s/%s/%s'%(cmdStr,ip,names[1],names[2])
-    def delayRender(msg):
+    def delayRender(msg,alert='info'):
       flash = IFlash(request.getSession())
       flash.msg = msg
+      flash.alert = alert
       request.redirect('/proc')
       finishRequest(None,request)
     if cmdStr=='Restart':
@@ -160,12 +164,13 @@ class ProcOpResource(Resource):
       def procInfo(result,msg):
         yamContent = result[0][0]
         lp = LPConfig(yaml.load(yamContent))
-        print lp
+        alert = 'info'
         if lp.fileUpdateInfo():
           clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
         else:
           msg += " invalid"
-        delayRender(msg)
+          alert = 'error'
+        delayRender(msg,alert)
       getDb().runQuery('SELECT procInfo FROM Process WHERE clientIp = ? and procGroup = ? and procName = ?',\
       [ip,names[1],names[2]]).addCallback(procInfo,msg)
     return NOT_DONE_YET

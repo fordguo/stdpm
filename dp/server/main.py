@@ -9,11 +9,11 @@ from datetime import datetime
 import os
 import json
 
-from dp.common import PROC_STATUS,getDatarootDir,checkDir,JSON,JSON_LEN,changeDpDir,selfFileSet,dpDir
+from dp.common import PROC_STATUS,getDatarootDir,checkDir,JSON,JSON_LEN,changeDpDir,selfFileSet,dpDir,TIME_FORMAT
 
 version = "1.0.2"
 
-DEFAULT_INVALID = {'status':PROC_STATUS.STOP,'lastUpdated':None}
+DEFAULT_INVALID = {'status':PROC_STATUS.STOP,'lastUpdated':None,'fileUpdated':None}
 DATA_DIR="data"
 
 db = None 
@@ -94,7 +94,7 @@ class CoreServer(NetstringReceiver):
   def connectionLost(self, reason):
     clientIp = self._getIp()
     del resourceDict[clientIp]
-    checkIpDict(clientIp)['protocol'] = None
+    _checkIpDict(clientIp)['protocol'] = None
 
   def stringReceived(self, string):
     if string.startswith(JSON):
@@ -106,21 +106,25 @@ class CoreServer(NetstringReceiver):
       self._processYaml(string[YAML_LEN:idx],name,string[nIdx+1:])
   def _processJson(self,json):
     action = json.get('action')
+    clientIp = self._getIp()
     if action=='procStatus':
-      value = json['value']
-      name = self._procName(value)
+      name = self._procName(json)
       status = resourceDict.get(name)
       if not status:
-        resourceDict[name] = {'status':PROC_STATUS.lookupByName(value['status']),'lastUpdated':datetime.now()}
+        resourceDict[name] = {'status':PROC_STATUS.lookupByName(json['status']),'lastUpdated':datetime.now()}
       else:
-        status['status'] = PROC_STATUS.lookupByName(value['status'])
+        status['status'] = PROC_STATUS.lookupByName(json['status'])
         status['lastUpdated'] = datetime.now()
     elif action=='clientVersion':
-      result = _checkIpDict(self._getIp())
+      result = _checkIpDict(clientIp)
       result['version'] = json['value']
-    elif action=='updateFinish':
-      db.runOperation('UPDATE Process SET fileUpdateTime = ? WHERE clientIp=? and procGroup=? and procName=?',\
-      (json['datetime'],self._getIp(),json['group'],json['name'])).addCallback(lambda x:x)
+    elif action=='fileUpdate':
+      if json['group']:
+        name = self._procName(json)
+      else:
+        name = clientIp
+      if json['datetime']:
+        resourceDict.get(name)['fileUpdated'] = datetime.strptime(json['datetime'],TIME_FORMAT)
     else:
       print 'unknow json:',json
   def _procName(self,value):

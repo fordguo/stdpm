@@ -6,7 +6,7 @@ from twisted.internet import reactor,task
 
 import os,json
 import yaml
-from process import procGroupDict,initYaml,restartProc,getLPConfig,registerSendStatus
+from process import procGroupDict,initYaml,restartProc,getLPConfig,registerSendStatus,lastFileUpdateTime
 from dp.client.ftp import downloadFiles
 from dp.common import JSON,JSON_LEN,changeDpDir,selfFileSet
 
@@ -14,12 +14,16 @@ client = None
 
 version="1.0.2"
 
+loopCount = 0
 
 def minuteCheck():
+  global loopCount
+  loopCount += 1
   if client is None:return
-  for procGroup in procGroupDict.itervalues():
-    for name,proc in procGroup.iterStatus():
-      client.sendProcStatus(procGroup.name,name,proc.status)
+  if loopCount%5==0:
+    for procGroup in procGroupDict.itervalues():
+      for name,proc in procGroup.iterStatus():
+        client.sendProcStatus(procGroup.name,name,proc.status)
 looping = task.LoopingCall(minuteCheck)
 
 def getClient():
@@ -33,11 +37,13 @@ class CoreClient(NetstringReceiver):
     global client
     client = self
     registerSendStatus(self.sendProcStatus)
+    self.sendFileUpdate(None,None,lastFileUpdateTime(None,None))
     for procGroup in procGroupDict.itervalues():
       for name,procInfo in procGroup.iterMap():
         self.sendYaml("%s:%s:%s"%(procGroup.name,name.replace(':','_-_'),yaml.dump(procInfo,default_flow_style=None)))
       for name,proc in procGroup.iterStatus():
-        client.sendProcStatus(procGroup.name,name,proc.status)
+        self.sendProcStatus(procGroup.name,name,proc.status)
+        self.sendFileUpdate(procGroup.name,name,lastFileUpdateTime(procGroup.name,name))
     self.sendJson(json.dumps({'action':'clientVersion','value':version}))
   def connectionLost(self, reason):
     global client
@@ -81,8 +87,9 @@ class CoreClient(NetstringReceiver):
     self.sendString("yaml:"+string)
 
   def sendProcStatus(self,procGroup,procName,status):
-      self.sendJson(json.dumps({'action':'procStatus','value':{'group':procGroup,\
-        'name':procName,'status':status.name}}))    
+    self.sendJson(json.dumps({'action':'procStatus','group':procGroup,'name':procName,'status':status.name}))
+  def sendFileUpdate(self,procGroup,procName,strTime):
+    self.sendJson(json.dumps({'action':'fileUpdate','group':procGroup,'name':procName,'datetime':strTime}))
 
 class CoreClientFactory(ReconnectingClientFactory):
   def __init__(self,config):
@@ -97,7 +104,7 @@ def makeService(config):
   clientService = service.MultiService()
   changeDpDir(config['dataDir'])
   initYaml()
-  looping.start(300)
+  looping.start(60)
   internet.TCPClient(config['server'],int(config['port']), CoreClientFactory(config)).setServiceParent(clientService)
   def shutdown():
     for procGroup in procGroupDict.itervalues():

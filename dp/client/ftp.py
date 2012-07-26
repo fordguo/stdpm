@@ -66,8 +66,7 @@ class BufferFileTransferProtocol(Protocol):
               shutil.rmtree(cache)
             restartProc(self.psGroup,self.psName,int(self.restart.get('sleep',10)))
           if self.client is not None:
-            self.client.sendJson(json.dumps({'action':'updateFinish','group':self.psGroup,'name':self.psName,\
-            'datetime':datetime.now().strftime(TIME_FORMAT)}))
+            self.client.sendFileUpdate(self.psGroup,self.psName,datetime.now().strftime(TIME_FORMAT))
 
 
 def fail(error):
