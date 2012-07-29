@@ -6,7 +6,8 @@ from twisted.internet import reactor,task
 
 import os,json
 import yaml
-from process import procGroupDict,initYaml,restartProc,getLPConfig,registerSendStatus,lastFileUpdateTime
+import process
+from process import procGroupDict,lastFileUpdateTime
 from dp.client.ftp import downloadFiles
 from dp.common import JSON,JSON_LEN,changeDpDir,selfFileSet
 
@@ -36,7 +37,7 @@ class CoreClient(NetstringReceiver):
   def connectionMade(self):
     global client
     client = self
-    registerSendStatus(self.sendProcStatus)
+    process.registerSendStatus(self.sendProcStatus)
     self.sendFileUpdate(None,None,lastFileUpdateTime(None,None))
     for procGroup in procGroupDict.itervalues():
       for name,procInfo in procGroup.iterMap():
@@ -68,9 +69,9 @@ class CoreClient(NetstringReceiver):
       psName = json['name']
       op = json['op']
       if op=='Restart':
-        restartProc(psGroup,psName)
+        process.restartProc(psGroup,psName)
       elif op=='Update':
-        lp = getLPConfig(psGroup,psName)
+        lp = process.getLPConfig(psGroup,psName)
         if lp:
           updateInfo = lp.fileUpdateInfo()
           downloadFiles(self.config,updateInfo[1][1],psGroup,psName,updateInfo[0][1],self)
@@ -103,12 +104,12 @@ from twisted.application import internet, service
 def makeService(config):
   clientService = service.MultiService()
   changeDpDir(config['dataDir'])
-  initYaml()
+  process.initYaml()
+  process.startAll()
   looping.start(60)
   internet.TCPClient(config['server'],int(config['port']), CoreClientFactory(config)).setServiceParent(clientService)
   def shutdown():
-    for procGroup in procGroupDict.itervalues():
-      procGroup.stop()
+    process.stopAll()
   reactor.addSystemEventTrigger("before", "shutdown", shutdown)
   return clientService
 

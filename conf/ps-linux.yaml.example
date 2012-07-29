@@ -3,6 +3,7 @@ echo 15:
   executable: /bin/echo
   gid: null
   path: null
+  dependencies: ['group::name']
   priority: 50
   usePTY: false
   uid: null
@@ -11,6 +12,9 @@ echo 15:
     periodMinutes: 5
   monitor:
     enable: false
+    startCompletion:
+      keyword: null
+      checkLog: false
     log:
       file: null
       keyword: null

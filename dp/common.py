@@ -18,6 +18,8 @@ selfFileSet = [
 TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 CR = '\r\n' if platform.platform().find("Windows")==0 else '\n'
 
+PS_BASIC = ['executable','args','path','user','group','usePTY','childFDs']
+
 def changeDpDir(newDir):
   global _datarootDir
   checkDir(newDir)
@@ -33,6 +35,7 @@ class PROC_STATUS(Names):
     """
     Constants representing various process status.
     """
+    STARTING = NamedConstant()
     RUN = NamedConstant()
     STOPPING = NamedConstant()
     STOP = NamedConstant()

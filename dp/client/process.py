@@ -5,12 +5,11 @@ from twisted.internet import error,reactor,protocol
 from twisted.python.logfile import DailyLogFile,LogFile
 from datetime import datetime
 from dp.common import SIGNAL_NAME,PROC_STATUS,getDatarootDir,dpDir,LPConfig,TIME_FORMAT,CR
+from dep_resolver import resortPs,SEP
 
 import os,time
 import yaml
 import glob
-
-PS_BASIC = ['executable','args','path','user','group','usePTY','childFDs']
 
 procGroupDict = {}
 sendStatusFunc = None
@@ -26,7 +25,16 @@ def initYaml(yamlDir=None):
   for f in files:
     pg = ProcessGroup(f)
     procGroupDict[pg.name] = pg
-    pg.start()
+
+def startAll():
+  for uniName in resortPs(procGroupDict):
+    gpName,psName = uniName.split(SEP)
+    procGroupDict[gpName].startProc(psName)
+
+def stopAll():
+  for procGroup in procGroupDict.itervalues():
+    procGroup.stop()
+
 
 def restartProc(psGroup,psName,secs=10):
   pg = procGroupDict.get(psGroup)
@@ -86,9 +94,6 @@ class ProcessGroup:
       os.makedirs(dirName)
     self.procsMap = yaml.load(file(yamlFile))
     self.locals = {}
-  def start(self):
-    for name,procInfo in self.procsMap.iteritems():
-      self._start(name,procInfo)
   def _start(self,name,procInfo):
     localProc = LocalProcess(name,self)
     conf = LPConfig(procInfo)
@@ -96,8 +101,8 @@ class ProcessGroup:
     reactor.spawnProcess(localProc,conf.executable, conf.execArgs,conf.env,\
       conf.path,conf.uid,conf.gid,conf.usePTY,conf.childFDs)
   def startProc(self,procName):
-    localProc = self.locals[procName]
-    if localProc and not localProc.isRunning():
+    localProc = self.locals.get(procName)
+    if localProc is None or  not localProc.isRunning():
       self._start(procName,self.procsMap[procName])
     else:
       print 'process '+procName +' have not found or have been started.'
@@ -152,7 +157,7 @@ class LocalProcess(protocol.ProcessProtocol):
     self.endTime = None
 
   def connectionMade(self):
-    self.status = PROC_STATUS.RUN
+    self.status = PROC_STATUS.STARTING
     self._writeLog("[processStarted] at:%s"%(datetime.now().strftime(TIME_FORMAT)))
     global sendStatusFunc
     if sendStatusFunc:
