@@ -144,7 +144,7 @@ class ProcOpResource(Resource):
   def render_GET(self,request):
     name = request.args.get('name')[0]
     clientip,pgName,psName = name.split(':')
-    defQueue = defer.DeferredQueue()
+    defQueue = defer.DeferredQueue(1,1)
     defQueue.get().addCallback(lambda x:request.write(getTemplateContent('consoleLog',psLabel='%s:%s'%(pgName,psName),logContent=x))).addBoth(finishRequest,request)
     clientIpDict[clientip]['protocol'].asyncSendJson({'action':'procOp','op':'Console','grp':pgName,'name':psName},defQueue)
     return NOT_DONE_YET
