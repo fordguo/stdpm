@@ -78,14 +78,17 @@ class CoreClient(NetstringReceiver):
         else:
           print 'can not found LPConfig with '+json
       elif op=='Console':
-        print json
+        self.sendTxt(json['uuid'],process.getPsLog(psGroup,psName))
     else:
       print 'unknown json %s'%json
   def sendJson(self,string):
-    self.sendString("json:"+string)
+    self.sendString("json:%s"%string)
 
   def sendYaml(self,string):
-    self.sendString("yaml:"+string)
+    self.sendString("yaml:%s"%string)
+
+  def sendTxt(self,uuid,string):
+    self.sendString(str("txt:%s:%s"%(uuid,string)))
 
   def sendProcStatus(self,procGroup,procName,status):
     self.sendJson(json.dumps({'action':'procStatus','group':procGroup,'name':procName,'status':status.name}))

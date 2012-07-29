@@ -13,6 +13,7 @@ import glob
 
 procGroupDict = {}
 sendStatusFunc = None
+LAST_END = 8192
 
 def registerSendStatus(func):
   global sendStatusFunc
@@ -83,6 +84,17 @@ def lastFileUpdateTime(psGroup,psName):
     if localProc:
       with open(localProc.updateLogFile.path,'r') as f:
         return _lastUpdateTime(f)
+  return None
+def getPsLog(psGroup,psName):
+  pg = procGroupDict.get(psGroup)
+  if pg:
+    localProc = pg.locals.get(psName)
+    if localProc:
+      fsize = os.path.getsize(localProc.logFile.path)
+      with open(localProc.logFile.path,'r') as f:
+        if fsize>LAST_END:
+          f.seek(-LAST_END,os.SEEK_END)
+        return f.read()
   return None
 
 class ProcessGroup:
@@ -157,7 +169,7 @@ class LocalProcess(protocol.ProcessProtocol):
     self.endTime = None
 
   def connectionMade(self):
-    self.status = PROC_STATUS.STARTING
+    self.status = PROC_STATUS.RUN#todo add support startCompletion check
     self._writeLog("[processStarted] at:%s"%(datetime.now().strftime(TIME_FORMAT)))
     global sendStatusFunc
     if sendStatusFunc:

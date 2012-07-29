@@ -3,7 +3,7 @@
 from twisted.web.resource import Resource
 from twisted.web.static import File
 from twisted.web.server import NOT_DONE_YET
-from twisted.internet import reactor
+from twisted.internet import reactor,defer
 
 from zope.interface import Interface, Attribute, implements
 from twisted.python.components import registerAdapter
@@ -143,11 +143,14 @@ class ProcessResource(Resource):
 class ProcOpResource(Resource):
   def render_GET(self,request):
     name = request.args.get('name')[0]
-    return "<h4>%s</h4><p>Hello log"%name
+    clientip,pgName,psName = name.split(':')
+    defQueue = defer.DeferredQueue()
+    defQueue.get().addCallback(lambda x:request.write(getTemplateContent('consoleLog',psLabel='%s:%s'%(pgName,psName),logContent=x))).addBoth(finishRequest,request)
+    clientIpDict[clientip]['protocol'].asyncSendJson({'action':'procOp','op':'Console','grp':pgName,'name':psName},defQueue)
+    return NOT_DONE_YET
   def render_POST(self, request):
     cmdStr = request.args['op'][0]
     name = request.args.get('name')[0]
-    print name
     names = name.split(":")
     ip = names[0]
     msg = '%s remote://%s/%s/%s'%(cmdStr,ip,names[1],names[2])

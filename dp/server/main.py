@@ -6,7 +6,7 @@ from twisted.internet import reactor
 from twisted.enterprise import adbapi
 
 from datetime import datetime
-import os
+import os,uuid
 import json
 
 from dp.common import PROC_STATUS,getDatarootDir,checkDir,JSON,JSON_LEN,changeDpDir,selfFileSet,dpDir,TIME_FORMAT
@@ -83,6 +83,7 @@ def _checkResourceDictName(name,status=None):
 class CoreServer(NetstringReceiver):
   def __init__(self):
     self.ip = None
+    self.uuidDict = {}
   def _getIp(self):
     if not self.ip:
       self.ip =  self.transport.getPeer().host
@@ -104,6 +105,13 @@ class CoreServer(NetstringReceiver):
       nIdx = string.find(':',idx+1)
       name = string[idx+1:nIdx].replace('_-_',':')
       self._processYaml(string[YAML_LEN:idx],name,string[nIdx+1:])
+    elif string.startswith(TXT):
+      idx = string.find(':',TXT_LEN+1)
+      uuidStr = string[TXT_LEN:idx]
+      value = self.uuidDict.get(uuidStr)
+      if value:
+        value.put(string[idx+1:])
+        del self.uuidDict[uuidStr]
   def _processJson(self,json):
     action = json.get('action')
     clientIp = self._getIp()
@@ -143,6 +151,11 @@ class CoreServer(NetstringReceiver):
   
   def sendJson(self,string):
     self.sendString("json:"+string)
+  def asyncSendJson(self,jsonMap,defQueue):
+    uuidStr = uuid.uuid4().hex
+    jsonMap['uuid'] = uuidStr
+    self.uuidDict[uuidStr] = defQueue
+    self.sendJson(json.dumps(jsonMap))
 
 class CoreServerFactory(Factory):
   protocol = CoreServer
