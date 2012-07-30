@@ -126,7 +126,7 @@ class ProcessGroup:
   def stop(self):
     for localProc in self.locals.itervalues():
       if localProc.isRunning():
-        self._stopProc(localProc,1,None)
+        self._forceStopProcess(localProc,None,False)
   def _forceStopProcess(self,localProc,procName,restart=False):
     try:
       localProc.signal(SIGNAL_NAME.KILL)
@@ -138,10 +138,10 @@ class ProcessGroup:
   def _stopProc(self,localProc,killTime,procName,restart=False):
     try:
       localProc.signal(SIGNAL_NAME.TERM)
+    except error.ProcessExitedAlready:
       if restart:
         time.sleep(killTime)
         self.startProc(procName)
-    except error.ProcessExitedAlready:
       pass
     else:
       reactor.callLater(killTime,self._forceStopProcess,localProc,procName,restart)
