@@ -33,7 +33,7 @@ def resortPs(procGroupDict):
       uniqueName = "%s%s%s"%(gpName,SEP,psName)
       allPs.append(uniqueName)
       if psInfo.get('dependencies'):
-        psDeps[uniqueName] = psInfo.get('dependencies')
+        psDeps[uniqueName] = ["%s%s%s"%(gpName,SEP,dep) if len(dep.split(SEP))==1 else dep for dep in psInfo.get('dependencies')]
   depSet = resolve_paralell(allPs,psDeps)
   result = []
   def _priority(name):
