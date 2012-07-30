@@ -22,7 +22,7 @@ def autoCheckEggs():
     for egg in eggs:
       basename = os.path.basename(egg)
       spLen = len(basename.split("-"))
-      if spLen==3 or (spLen>4 and basename.find(platform)>0):
+      if spLen==3 or (spLen>=4 and basename.find(platform)>0):
         bestEgg = egg
     if bestEgg :    
       sysPath.append(bestEgg)
