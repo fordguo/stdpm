@@ -1,3 +1,4 @@
+#-*- coding:utf-8 -*- 
 
 from twisted.python import usage
 from dp.server import main
@@ -13,4 +14,7 @@ class Options(usage.Options):
   optFlags = []
 
 def makeService(config):
-    return main.makeService(config)
+  import sys
+  reload(sys)
+  sys.setdefaultencoding("utf-8")
+  return main.makeService(config)

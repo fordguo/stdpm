@@ -116,8 +116,6 @@ class ProcessGroup:
     localProc = self.locals.get(procName)
     if localProc is None or  not localProc.isRunning():
       self._start(procName,self.procsMap[procName])
-    else:
-      print 'process '+procName +' have not found or have been started.'
 
   def iterStatus(self):
     return self.locals.iteritems()
@@ -153,9 +151,7 @@ class ProcessGroup:
     else:
       print 'process '+procName +' have not found or have been stopped.'
   def restartProc(self,procName,secs=10):
-    localProc = self.locals[procName]
-    if localProc and localProc.isRunning():
-      self.stopProc(procName,secs,True)
+    self.stopProc(procName,secs,True)
 
     
 class LocalProcess(protocol.ProcessProtocol):
