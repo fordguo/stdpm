@@ -20,16 +20,14 @@ cacheDir = os.path.join(getDatarootDir(),'data','filecache','')
 checkDir(cacheDir)
 
 class BufferFileTransferProtocol(Protocol):
-  def __init__(self,fname,localInfo,psGroup,psName,isLast,restart,client):
+  def __init__(self,fname,localInfo,psGroup,psName,changeFlagList):
     self.fname=fname
     self.psGroup = psGroup
     self.psName = psName
-    self.restart = restart
-    self.isLast = isLast
     self.localInfo = localInfo
     self.tmpName=os.path.join(cacheDir,fname+'.tmp')
     self.fileInst=open(self.tmpName,'wb+')
-    self.client = client
+    self.changeFlagList = changeFlagList
   def dataReceived(self,data):
     self.fileInst.write(data)
   def connectionLost(self,reason=ConnectionDone):
@@ -49,6 +47,7 @@ class BufferFileTransferProtocol(Protocol):
       else:
         changed = True
       if changed:
+        changeFlagList.append(changed)
         os.rename(self.tmpName, cacheFile)
         localDir = self.localInfo['dir']
         checkDir(localDir)
@@ -60,14 +59,6 @@ class BufferFileTransferProtocol(Protocol):
           updateLog(self.psGroup,self.psName,self.fname)
         else:
           clientUpdateLog(self.fName)
-        if self.isLast:
-          if self.restart.get('enable',True) and self.psGroup is not None:
-            for cache in self.restart.get('clearCaches',[]):
-              shutil.rmtree(cache)
-            restartProc(self.psGroup,self.psName,int(self.restart.get('sleep',10)))
-          if self.client is not None:
-            self.client.sendFileUpdate(self.psGroup,self.psName,datetime.now().strftime(TIME_FORMAT))
-
 
 def fail(error):
   print 'Ftp failed.  Error was:',error
@@ -90,7 +81,9 @@ def connectionMade(ftpClient,fileset,psGroup,psName,restart,client):
     localInfo = fileInfo.get('local')
     if localInfo is None: continue
     localDir = localInfo.get('dir')
-    if localDir is None or not os.path.exists(localDir): continue
+    if localDir is None or not os.path.exists(localDir): 
+      print 'localDir:%s is None or not exist.'%localDir
+      continue
     remoteFilters = remoteInfo.get('filters',['*']) 
     proto = FTPFileListProtocol()
     d = ftpClient.list(remoteDir, proto)
@@ -99,15 +92,25 @@ def connectionMade(ftpClient,fileset,psGroup,psName,restart,client):
 
 def processFiles(result,ftpClient,proto,remoteDir,remoteFilters,localInfo,isLast,psGroup,psName,restart,client):
   d = None
+  changeFlagList = []
   for f in proto.files:
     if f['filetype']=='-':
       fName = f['filename']
       for fl in remoteFilters:
         if fnmatch.fnmatch(fName,fl):
-          d = ftpClient.retrieveFile("%s/%s"%(remoteDir,fName), BufferFileTransferProtocol(fName,localInfo,\
-            psGroup,psName,isLast,restart,client))
+          transferProtocol = BufferFileTransferProtocol(fName,localInfo,psGroup,psName,changeFlagList)
+          d = ftpClient.retrieveFile("%s/%s"%(remoteDir,fName),transferProtocol)
   if isLast and d:
-    d.addCallback(lambda x,y:y.quit().addCallback(echoResult),ftpClient)
+    def beforeQuit(result):
+      if len(changeFlagList)>0 and changeFlagList[0]:
+          if restart.get('enable',True) and psGroup is not None:
+            for cache in restart.get('clearCaches',[]):
+              shutil.rmtree(cache)
+            restartProc(psGroup,psName,int(restart.get('sleep',10)))
+          if client is not None:
+            client.sendFileUpdate(psGroup,psName,datetime.now().strftime(TIME_FORMAT))
+      ftpClient.quit().addCallback(echoResult)
+    d.addCallback(beforeQuit)
 
 def crcCheck(source,target):
   return crc32(source)==crc32(target)

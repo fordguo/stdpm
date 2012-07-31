@@ -74,7 +74,8 @@ class CoreClient(NetstringReceiver):
         lp = process.getLPConfig(psGroup,psName)
         if lp:
           updateInfo = lp.fileUpdateInfo()
-          downloadFiles(self.config,updateInfo[1][1],psGroup,psName,updateInfo[0][1],self)
+          if len(updateInfo) > 0:
+            downloadFiles(self.config,updateInfo[1][1],psGroup,psName,updateInfo[0][1],self)
         else:
           print 'can not found LPConfig with '+json
       elif op=='Console':
