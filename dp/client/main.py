@@ -83,10 +83,10 @@ class CoreClient(NetstringReceiver):
     else:
       print 'unknown json %s'%json
   def sendJson(self,string):
-    self.sendString("json:%s"%string.decode('unicode_escape').encode('utf-8','ignore'))
+    self.sendString("json:%s"%string)
 
   def sendYaml(self,string):
-    self.sendString("yaml:%s"%string.decode('unicode_escape').encode('utf-8','ignore'))
+    self.sendString("yaml:%s"%string)
 
   def sendTxt(self,uuid,string):
     self.sendString("txt:%s:%s"%(uuid,string.decode('unicode_escape').encode('utf-8','ignore')))

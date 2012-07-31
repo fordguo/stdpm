@@ -47,7 +47,7 @@ class BufferFileTransferProtocol(Protocol):
       else:
         changed = True
       if changed:
-        changeFlagList.append(changed)
+        self.changeFlagList.append(changed)
         os.rename(self.tmpName, cacheFile)
         localDir = self.localInfo['dir']
         checkDir(localDir)
@@ -73,6 +73,7 @@ def downloadFiles(config,fileset=[],psGroup=None,psName=None,restart={},client=N
 
 def connectionMade(ftpClient,fileset,psGroup,psName,restart,client):
   lastLen = len(fileset)-1
+  deferList = ([],[])
   for n,fileInfo in enumerate(fileset):
     remoteInfo = fileInfo.get('remote')
     if remoteInfo is None: continue
@@ -88,21 +89,19 @@ def connectionMade(ftpClient,fileset,psGroup,psName,restart,client):
     proto = FTPFileListProtocol()
     d = ftpClient.list(remoteDir, proto)
     d.addCallbacks(processFiles, fail, callbackArgs=(ftpClient,proto,remoteDir,remoteFilters,localInfo,\
-      n==lastLen,psGroup,psName,restart,client))
+      n==lastLen,psGroup,psName,restart,client,deferList))
 
-def processFiles(result,ftpClient,proto,remoteDir,remoteFilters,localInfo,isLast,psGroup,psName,restart,client):
-  d = None
-  changeFlagList = []
+def processFiles(result,ftpClient,proto,remoteDir,remoteFilters,localInfo,isLast,psGroup,psName,restart,client,deferList):
   for f in proto.files:
     if f['filetype']=='-':
       fName = f['filename']
       for fl in remoteFilters:
         if fnmatch.fnmatch(fName,fl):
-          transferProtocol = BufferFileTransferProtocol(fName,localInfo,psGroup,psName,changeFlagList)
-          d = ftpClient.retrieveFile("%s/%s"%(remoteDir,fName),transferProtocol)
-  if isLast and d:
+          transferProtocol = BufferFileTransferProtocol(fName,localInfo,psGroup,psName,deferList[1])
+          deferList[0].append(ftpClient.retrieveFile("%s/%s"%(remoteDir,fName),transferProtocol))
+  if isLast and len(deferList[0])>0:
     def beforeQuit(result):
-      if len(changeFlagList)>0 and changeFlagList[0]:
+      if len(deferList[1])>0 and deferList[1][0]:
           if restart.get('enable',True) and psGroup is not None:
             for cache in restart.get('clearCaches',[]):
               shutil.rmtree(cache)
@@ -110,7 +109,7 @@ def processFiles(result,ftpClient,proto,remoteDir,remoteFilters,localInfo,isLast
           if client is not None:
             client.sendFileUpdate(psGroup,psName,datetime.now().strftime(TIME_FORMAT))
       ftpClient.quit().addCallback(echoResult)
-    d.addCallback(beforeQuit)
+    deferList[0][-1].addCallback(beforeQuit)
 
 def crcCheck(source,target):
   return crc32(source)==crc32(target)
@@ -121,4 +120,3 @@ def crc32(file):
     for chunk in iter(lambda: f.read(8192), ''): 
       result = zlib.crc32(chunk,result)
   return "%08x"%(result & 0xFFFFFFFF)
-
