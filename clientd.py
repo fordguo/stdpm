@@ -32,7 +32,14 @@ sys.path[0:0] = sysPath
 if __name__ == '__main__':
   import twisted.scripts.twistd
   config.read(os.path.join(dpHome,'conf','clientd.cfg'))
-  args = "sys.path[0:0]=%s;import twisted.scripts.twistd;sys.argv=sys.argv[:1]+['-n','--logfile','clientd.log','--pidfile','clientd.pid','dpclient','-h','%s','-p',%d,'-f',%d]"%(
-    sysPath,config.get('basic','server'),config.getint('basic','port'),config.getint('basic','ftpPort'))
+  loginfo = ''
+  if platform.find('Windows') == -1:
+    logdir = os.path.join(dpHome,'data','log')
+    if not os.path.exists(logdir):
+      os.makedirs(logdir)
+    loginfo = ",'--logfile','data/log/clientd.log','--pidfile','data/log/clientd.pid'"
+
+  args = "sys.path[0:0]=%s;import twisted.scripts.twistd;sys.argv=sys.argv[:1]+['-n'%s,'dpclient','-h','%s','-p',%d,'-f',%d]"%(
+    sysPath,loginfo,config.get('basic','server'),config.getint('basic','port'),config.getint('basic','ftpPort'))
   sys.argv=sys.argv[:1]+['procmon','-M',60,sys.executable,'-c','import sys;%s;twisted.scripts.twistd.run()'%args]
   twisted.scripts.twistd.run()

@@ -33,6 +33,13 @@ if __name__ == '__main__':
   import twisted.scripts.twistd
   config.read(os.path.join(dpHome,'conf','serverd.cfg'))
 
-  sys.argv = sys.argv[:1]+['-l','serverd.log','--pidfile','serverd.pid','dpserver','-m',config.get('basic','mainPort'),\
+  loginfo = []
+  if platform.find('Windows') == -1:
+    logdir = os.path.join(dpHome,'data','log')
+    if not os.path.exists(logdir):
+      os.makedirs(logdir)
+    loginfo = ['-l','data/log/serverd.log','--pidfile','data/log/serverd.pid']
+
+  sys.argv = sys.argv[:1]+loginfo+['dpserver','-m',config.get('basic','mainPort'),\
     '-f',config.getint('basic','ftpPort'),'-h',config.getint('basic','httpPort')]
   twisted.scripts.twistd.run()
