@@ -21,10 +21,11 @@ def minuteCheck():
   global loopCount
   loopCount += 1
   if client is None:return
-  if loopCount%5==0:
-    for procGroup in procGroupDict.itervalues():
+  for procGroup in procGroupDict.itervalues():
+    procGroup.checkRestart()
+    if loopCount%5==0:
       for name,proc in procGroup.iterStatus():
-        client.sendProcStatus(procGroup.name,name,proc.status)
+        client.sendProcStatus(procGroup.name,name,proc[0].status)      
 looping = task.LoopingCall(minuteCheck)
 
 def getClient():
@@ -43,7 +44,7 @@ class CoreClient(NetstringReceiver):
       for name,procInfo in procGroup.iterMap():
         self.sendYaml("%s:%s:%s"%(procGroup.name,name.replace(':','_-_'),yaml.dump(procInfo,default_flow_style=None)))
       for name,proc in procGroup.iterStatus():
-        self.sendProcStatus(procGroup.name,name,proc.status)
+        self.sendProcStatus(procGroup.name,name,proc[0].status)
         self.sendFileUpdate(procGroup.name,name,lastFileUpdateTime(procGroup.name,name))
     self.sendJson(json.dumps({'action':'clientVersion','value':version}))
   def connectionLost(self, reason):
@@ -89,6 +90,8 @@ class CoreClient(NetstringReceiver):
     self.sendString("yaml:%s"%string)
 
   def sendTxt(self,uuid,string):
+    if string is None:
+      string = 'No Data'
     self.sendString("txt:%s:%s"%(uuid,string.decode('unicode_escape').encode('utf-8','ignore')))
 
   def sendProcStatus(self,procGroup,procName,status):

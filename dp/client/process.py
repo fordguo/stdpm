@@ -62,9 +62,9 @@ def updateLog(psGroup,psName,fname):
   if psGroup is None: return
   pg = procGroupDict.get(psGroup)
   if pg:
-    localProc = pg.locals.get(psName)
-    if localProc:
-      localProc.logUpdate(fname)
+    localValue = pg.locals.get(psName)
+    if localValue:
+      localValue[0].logUpdate(fname)
 def _lastUpdateTime(logFd):
   fsize = os.path.getsize(logFd.name)
   if fsize>100:
@@ -80,16 +80,17 @@ def lastFileUpdateTime(psGroup,psName):
       return _lastUpdateTime(f)
   pg = procGroupDict.get(psGroup)
   if pg:
-    localProc = pg.locals.get(psName)
-    if localProc:
-      with open(localProc.updateLogFile.path,'r') as f:
+    localValue = pg.locals.get(psName)
+    if localValue:
+      with open(localValue[0].updateLogFile.path,'r') as f:
         return _lastUpdateTime(f)
   return None
 def getPsLog(psGroup,psName):
   pg = procGroupDict.get(psGroup)
   if pg:
-    localProc = pg.locals.get(psName)
-    if localProc:
+    localValue = pg.locals.get(psName)
+    if localValue:
+      localProc = localValue[0]
       fsize = os.path.getsize(localProc.logFile.path)
       with open(localProc.logFile.path,'r') as f:
         if fsize>LAST_END:
@@ -107,14 +108,21 @@ class ProcessGroup:
     self.procsMap = yaml.load(file(yamlFile))
     self.locals = {}
   def _start(self,name,procInfo):
+    localValue = self.locals.get(name)
     localProc = LocalProcess(name,self)
-    conf = LPConfig(procInfo)
-    self.locals[name] = localProc
+    conf = None
+    if localValue:
+      localValue[0] =localProc
+      conf = localValue[1]
+    else:
+      conf = LPConfig(procInfo)
+      localValue = [localProc,conf]
+      self.locals[name] = localValue
     reactor.spawnProcess(localProc,conf.executable, conf.execArgs,conf.env,\
       conf.path,conf.uid,conf.gid,conf.usePTY,conf.childFDs)
   def startProc(self,procName):
     localProc = self.locals.get(procName)
-    if localProc is None or  not localProc.isRunning():
+    if localProc is None or  not localProc[0].isRunning():
       self._start(procName,self.procsMap[procName])
 
   def iterStatus(self):
@@ -122,9 +130,9 @@ class ProcessGroup:
   def iterMap(self):
     return self.procsMap.iteritems()
   def stop(self):
-    for localProc in self.locals.itervalues():
-      if localProc.isRunning():
-        self._forceStopProcess(localProc,None,False)
+    for localValue in self.locals.itervalues():
+      if localValue[0].isRunning():
+        self._forceStopProcess(localValue[0],None,False)
   def _forceStopProcess(self,localProc,procName,restart=False):
     try:
       localProc.signal(SIGNAL_NAME.KILL)
@@ -144,16 +152,24 @@ class ProcessGroup:
     else:
       reactor.callLater(killTime,self._forceStopProcess,localProc,procName,restart)
   def stopProc(self,procName,killTime=3,restart=False):
-    localProc = self.locals[procName]
-    if localProc and localProc.isRunning():
+    localValue = self.locals[procName]
+    localProc = localValue[0]
+    if localProc.isRunning():
       localProc.status = PROC_STATUS.STOPPING
       self._stopProc(localProc,killTime,procName,restart)
     else:
       print 'process '+procName +' have not found or have been stopped.'
   def restartProc(self,procName,secs=10):
     self.stopProc(procName,secs,True)
+  def checkRestart(self):
+    now = datetime.now()
+    for name,localValue in self.iterStatus():
+      localProc = localValue[0]
+      period = localValue[1].getPeriod()
+      if localProc.endTime and not localProc.isRunning() and \
+        period is not None and (now-localProc.endTime).seconds > (period*60):
+        self.startProc(name)
 
-    
 class LocalProcess(protocol.ProcessProtocol):
   def __init__(self, name,group):
     self.orgName = name

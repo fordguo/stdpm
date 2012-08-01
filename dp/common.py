@@ -68,6 +68,14 @@ class LPConfig(object):
     return result
   def restartValue(self):
     return self.confDict.get('restart',{'enable':True,'periodMinutes':5}).iteritems()
+  def getPeriod(self):
+    restartInfo =  self.confDict.get('restart')
+    if restartInfo is None:return 5
+    if restartInfo.get('enable',True):
+      return int(restartInfo.get('periodMinutes',5))
+    else:
+      return None
+
   def monitorValue(self):
     result = []
     mValue =  self.confDict.get('monitor',{'enable':False})
