@@ -14,7 +14,7 @@ except ImportError:
     from StringIO import StringIO
 
 from dp.common import getDatarootDir,checkDir,TIME_FORMAT
-from dp.client.process import restartProc,getLPConfig,updateLog
+from dp.client.process import restartProc,getLPConfig,updateLog,clientUpdateLog
 
 cacheDir = os.path.join(getDatarootDir(),'data','filecache','')
 checkDir(cacheDir)
