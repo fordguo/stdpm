@@ -154,11 +154,8 @@ class ProcessGroup:
   def stopProc(self,procName,killTime=3,restart=False):
     localValue = self.locals[procName]
     localProc = localValue[0]
-    if localProc.isRunning():
-      localProc.status = PROC_STATUS.STOPPING
-      self._stopProc(localProc,killTime,procName,restart)
-    else:
-      print 'process '+procName +' have not found or have been stopped.'
+    localProc.status = PROC_STATUS.STOPPING
+    self._stopProc(localProc,killTime,procName,restart)
   def restartProc(self,procName,secs=10):
     self.stopProc(procName,secs,True)
   def checkRestart(self):
