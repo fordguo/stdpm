@@ -34,7 +34,7 @@ if __name__ == '__main__':
   config.read(os.path.join(dpHome,'conf','serverd.cfg'))
 
   loginfo = []
-  if platform.find('Windows') == -1:
+  if platform.find('win') == -1:
     logdir = os.path.join(dpHome,'data','log')
     if not os.path.exists(logdir):
       os.makedirs(logdir)
