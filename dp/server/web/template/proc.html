@@ -62,7 +62,14 @@
 		e.preventDefault();
 		var href = $(this).attr('href');
 		$.get(href, function(data) {
-			$('<div class="modal fade" >' + data + '</div>').modal();
+			$('<div class="modal fade" >' + data + '</div>').modal().css({
+       			'width': function () {
+           			return ($(document).width() * .65) + 'px';
+       			},
+       			'margin-left': function () {
+           			return -($(this).width() / 2.1);
+       			}
+			});
 		});
 	});  
   });</script>
