@@ -17,7 +17,7 @@
 			<th>Status</th>
 			<th>Last Conneted</th>
 			<th>File Updated</th>
-			<th>Operations</th>
+			<th style="width:230px;">Operations</th>
 		<tr>
 	</thead>
 	<tbody>
@@ -40,10 +40,11 @@
 				% if  isRun(key):
 				<form class="form-inline" style="margin-bottom:2px;" method="POST" action="/clientOp">
 				<input type="hidden" name="ip" value="${key}"></input>
-				<input class="btn" type="submit" name="op" value="Restart"></input>
+				<input class="btn" type="submit" name="op" value="Restart" onclick="return confirm('Are you sure to restart ${key}?');"></input>
 				% if canUpdate:
-				<input class="btn" type="submit" name="op" value="Update"></input>
+				<input class="btn" type="submit" name="op" value="Update" onclick="return confirm('Are you sure to update ${key}?');"></input>
 				% endif
+				<input class="btn" type="submit" name="op" value="Reload"></input>
 				</form>
 				% endif
 			</td>

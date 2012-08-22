@@ -5,9 +5,9 @@ from dp.server import main
 
 class Options(usage.Options):
   optParameters = [
-    ['mainPort', 'm',56024],
-    ['ftpPort', 'f',56021],
-    ['httpPort', 'h',56080],
+    ['mainPort', 'm',3024],
+    ['ftpPort', 'f',3021],
+    ['httpPort', 'h',3080],
     ['dataDir','d','.']
 	]
 

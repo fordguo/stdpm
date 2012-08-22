@@ -6,9 +6,9 @@ from dp.client import main
 class Options(usage.Options):
   optParameters = [
     ['server', 'h','localhost'],
-    ['port', 'p',56024],
+    ['port', 'p',3024],
     ['dataDir','d','.'],
-    ['ftpPort', 'f',56021],
+    ['ftpPort', 'f',3021],
     ['ftpUser','u','user'],
     ['ftpPassword','P','trunksoft']
   ]

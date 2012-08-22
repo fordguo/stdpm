@@ -24,8 +24,16 @@ def initYaml(yamlDir=None):
     yamlDir = os.path.join(dpDir,'..','conf')
   files = glob.glob(os.path.join(yamlDir,'*.yaml'))
   for f in files:
-    pg = ProcessGroup(f)
-    procGroupDict[pg.name] = pg
+    name = _getFname(f)
+    pg = procGroupDict.get(name)
+    if pg is None:
+      pg = ProcessGroup(f)
+      procGroupDict[name] = pg
+    else:
+      pg.reload()
+def _getFname(fullFile):
+    fileName = os.path.basename(fullFile)
+    return os.path.splitext(fileName)[0]
 
 def startAll():
   for uniName in resortPs(procGroupDict):
@@ -100,13 +108,14 @@ def getPsLog(psGroup,psName):
 
 class ProcessGroup:
   def __init__(self,yamlFile):
-    fileName = os.path.basename(yamlFile)
-    self.name = os.path.splitext(fileName)[0]
+    self.yamlFile = yamlFile
+    self.name = _getFname(yamlFile)
     self.groupDir = dirName = os.path.join(getDatarootDir(),'data','ps',self.name)
     if not os.path.exists( dirName):
       os.makedirs(dirName)
-    self.procsMap = yaml.load(file(yamlFile))
+    self.procsMap = None
     self.locals = {}
+    self.reload()
   def _start(self,name,procInfo):
     localValue = self.locals.get(name)
     localProc = LocalProcess(name,self)
@@ -120,6 +129,8 @@ class ProcessGroup:
       self.locals[name] = localValue
     reactor.spawnProcess(localProc,conf.executable, conf.execArgs,conf.env,\
       conf.path,conf.uid,conf.gid,conf.usePTY,conf.childFDs)
+  def reload(self):
+    self.procsMap = yaml.load(file(self.yamlFile))
   def startProc(self,procName):
     localProc = self.locals.get(procName)
     if localProc is None or  not localProc[0].isRunning():

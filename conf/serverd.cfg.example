@@ -1,4 +1,4 @@
 [basic]
-mainPort=56024
-httpPort=56080
-ftpPort=56021
+mainPort=3024
+httpPort=3080
+ftpPort=3021

@@ -1,5 +1,5 @@
 [basic]
 server=localhost
-port=56024
+port=3024
 confDir=conf
-ftpPort=56021
+ftpPort=3021

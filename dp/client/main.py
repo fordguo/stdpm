@@ -40,13 +40,16 @@ class CoreClient(NetstringReceiver):
     client = self
     process.registerSendStatus(self.sendProcStatus)
     self.sendFileUpdate(None,None,lastFileUpdateTime(None,None))
+    self._initSend()
+    self.sendJson(json.dumps({'action':'clientVersion','value':version}))
+
+  def _initSend(self):
     for procGroup in procGroupDict.itervalues():
       for name,procInfo in procGroup.iterMap():
         self.sendYaml("%s:%s:%s"%(procGroup.name,name.replace(':','_-_'),yaml.dump(procInfo,default_flow_style=None)))
       for name,proc in procGroup.iterStatus():
         self.sendProcStatus(procGroup.name,name,proc[0].status)
         self.sendFileUpdate(procGroup.name,name,lastFileUpdateTime(procGroup.name,name))
-    self.sendJson(json.dumps({'action':'clientVersion','value':version}))
   def connectionLost(self, reason):
     global client
     client = None
@@ -65,6 +68,12 @@ class CoreClient(NetstringReceiver):
         reactor.stop()
       elif value=='Update':
         downloadFiles(self.config,selfFileSet)
+      elif value=='Reload':
+        process.initYaml()
+        process.startAll()
+        self._initSend()
+      else:
+        print 'unknown clientOp value:'+value
     elif action=='procOp':
       psGroup = json['grp']
       psName = json['name']
@@ -81,6 +90,8 @@ class CoreClient(NetstringReceiver):
           print 'can not found LPConfig with '+json
       elif op=='Console':
         self.sendTxt(json['uuid'],process.getPsLog(psGroup,psName))
+      else:
+        print 'unknown procOp value:'+op
     else:
       print 'unknown json %s'%json
   def sendJson(self,string):
