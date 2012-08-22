@@ -63,8 +63,17 @@ def getDb():
 def getStatus(name):
   return resourceDict.get(name,DEFAULT_INVALID)
 
+def _total_seconds(td):
+  return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
 def isRun(name):
-  return resourceDict.get(name,DEFAULT_INVALID)['status']==PROC_STATUS.RUN
+  status = resourceDict.get(name,DEFAULT_INVALID)['status']==PROC_STATUS.RUN
+  if not status:
+    return status
+  ipInfo = clientIpDict.get(name)
+  if ipInfo and ipInfo.get('lastShaked'):
+    lastShake = ipInfo['lastShaked']
+    return status and _total_seconds(datetime.now()-lastShake)<300
+  return status
 def countStop(ip):
   return len(filter(lambda x: x[0].startswith(ip+':') and x[1]['status']==PROC_STATUS.STOP,resourceDict.iteritems()))
 def uniqueProcName(ip,group,name):
@@ -126,6 +135,9 @@ class CoreServer(NetstringReceiver):
     elif action=='clientVersion':
       result = _checkIpDict(clientIp)
       result['version'] = json['value']
+    elif action=='clientStatus':
+      result = _checkIpDict(clientIp)
+      result['lastShaked'] = datetime.now()
     elif action=='fileUpdate':
       if json['group']:
         name = self._procName(json)

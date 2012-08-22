@@ -91,7 +91,8 @@ class ClientOpResource(Resource):
     flash.msg = msg
     time.sleep(0.5)
     request.redirect('/client')
-    return ""
+    finishRequest(None,request)
+    return NOT_DONE_YET
 
 class ClientResource(Resource):
   def __init__(self):
@@ -102,7 +103,8 @@ class ClientResource(Resource):
     for key,val in clientIpDict.iteritems():
       status = getStatus(key)
       clientDict[key] = {'version':val.get('version','N/A'),'status':status['status'],\
-      'lastConnected':fmtDate(status['lastUpdated']),'fileUpdated':fmtDate(status.get('fileUpdated'))}
+        'lastConnected':fmtDate(status['lastUpdated']),'fileUpdated':fmtDate(status.get('fileUpdated')),\
+        'lastShaked':fmtDate(val.get('lastShaked'))}
     request.write(getTemplateContent('client',clientDict=clientDict,flash=flash,canUpdate=checkUpdateDir(selfFileSet),**activeCssDict))
     finishRequest(None,request,flash)
     return NOT_DONE_YET

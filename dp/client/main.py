@@ -21,6 +21,7 @@ def minuteCheck():
   global loopCount
   loopCount += 1
   if client is None:return
+  client.sendJson(json.dumps({'action':'clientStatus','value':''}))
   for procGroup in procGroupDict.itervalues():
     procGroup.checkRestart()
     if loopCount%5==0:
