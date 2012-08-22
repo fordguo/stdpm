@@ -9,7 +9,7 @@ import yaml
 import process
 from process import procGroupDict,lastFileUpdateTime
 from dp.client.ftp import downloadFiles
-from dp.common import JSON,JSON_LEN,changeDpDir,selfFileSet
+from dp.common import JSON,JSON_LEN,changeDpDir,selfFileSet,SEP
 
 client = None
 
@@ -46,7 +46,7 @@ class CoreClient(NetstringReceiver):
   def _initSend(self):
     for procGroup in procGroupDict.itervalues():
       for name,procInfo in procGroup.iterMap():
-        self.sendYaml("%s:%s:%s"%(procGroup.name,name.replace(':','_-_'),yaml.dump(procInfo,default_flow_style=None)))
+        self.sendYaml("%s:%s:%s"%(procGroup.name,name.replace(':',SEP),yaml.dump(procInfo,default_flow_style=None)))
       for name,proc in procGroup.iterStatus():
         self.sendProcStatus(procGroup.name,name,proc[0].status)
         self.sendFileUpdate(procGroup.name,name,lastFileUpdateTime(procGroup.name,name))

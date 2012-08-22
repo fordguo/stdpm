@@ -9,7 +9,7 @@ from datetime import datetime
 import os,uuid
 import json
 
-from dp.common import PROC_STATUS,getDatarootDir,checkDir,JSON,JSON_LEN,changeDpDir,selfFileSet,dpDir,TIME_FORMAT
+from dp.common import PROC_STATUS,getDatarootDir,checkDir,JSON,JSON_LEN,changeDpDir,selfFileSet,dpDir,TIME_FORMAT,SEP
 
 version = "1.0.2"
 
@@ -68,9 +68,9 @@ def isRun(name):
 def countStop(ip):
   return len(filter(lambda x: x[0].startswith(ip+':') and x[1]['status']==PROC_STATUS.STOP,resourceDict.iteritems()))
 def uniqueProcName(ip,group,name):
-  return "%s:%s:%s"%(ip,group,name)
+  return "%s%s%s%s%s"%(ip,SEP,group,SEP,name)
 def splitProcName(name):
-  return name.split(":")
+  return name.split(SEP)
 
 def _checkResourceDictName(name,status=None):
   value = resourceDict.get(name)
@@ -103,7 +103,7 @@ class CoreServer(NetstringReceiver):
     elif string.startswith(YAML):
       idx = string.find(':',YAML_LEN+1)
       nIdx = string.find(':',idx+1)
-      name = string[idx+1:nIdx].replace('_-_',':')
+      name = string[idx+1:nIdx].replace(SEP,':')
       self._processYaml(string[YAML_LEN:idx],name,string[nIdx+1:])
     elif string.startswith(TXT):
       idx = string.find(':',TXT_LEN+1)

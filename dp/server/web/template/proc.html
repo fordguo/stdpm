@@ -9,7 +9,7 @@
 		${flash.msg}
 	</div>
 % endif
-<table class="table table-striped table-bordered table-condensed">
+<table class="table table-striped table-bordered table-condensed table-hover">
 	<thead>
 		<tr>
 			<th>Group</th>
@@ -18,7 +18,7 @@
 			<th>Last Shaked</th>
 			<th>File Updated</th>
 			% if isRun(currentIp):
-			<th>Operations</th>
+			<th style="width:170px;">Operations</th>
 			% endif
 		<tr>
 	</thead>
@@ -27,7 +27,18 @@
 			% for i,procRow in enumerate(value):
 		<tr>
 			% if i==0 :
-				<td rowspan="${len(value)}">${key}</td>
+				<td rowspan="${len(value)}">${key}<br/>
+					<div class="btn-group">
+					 	<a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+					    	Action<span class="caret"></span>
+					 	</a>
+					 	<ul class="dropdown-menu">
+							<li><a href="/groupOp?name=${procRow[3]}&op=Restart" onclick="return confirm('Are you sure to restart group ${key}?');">Restart</a>
+							</li>
+							<li><a href="/groupOp?name=${procRow[3]}&op=Update" onclick="return confirm('Are you sure to update group ${key} files?');">Update</a></li>
+						</ul>
+					</div>
+				</td>
 			% endif
 			<td><a href="/clientProcInfo?name=${procRow[3]}">${procRow[0]}</a></td>
 			<td>
@@ -42,13 +53,19 @@
 			<td>${procRow[2]}</td>
 			<td>${procRow[4]}</td>
 			% if isRun(currentIp):
-			<td style="width:230px;">
-				<form class="form-inline" style="margin-bottom:2px;" method="POST" action="/procOp">
-				<input type="hidden" name="name" value="${procRow[3]}"></input>
-				<input class="btn" type="submit" name="op" value="Restart"></input>
-				<input class="btn" type="submit" name="op" value="Update"></input>
-				<a class="btn" data-toggle="modal" href="/procOp?name=${procRow[3]}">Console</a>
-				</form>
+			<td>
+				<div class="btn-toolbar" style="margin: 0;">
+					<div class="btn-group">
+					 	<a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+					    	Action<span class="caret"></span>
+					 	</a>
+					 	<ul class="dropdown-menu">
+							<li><a href="/procOp?name=${procRow[3]}&op=Restart" onclick="return confirm('Are you sure to restart ${procRow[3]}?');">Restart</a></li>
+							<li><a href="/procOp?name=${procRow[3]}&op=Update" onclick="return confirm('Are you sure to update ${procRow[3]} files?');">Update</a></li>
+						</ul>
+					</div>
+					<a class="btn btn-info" data-toggle="modal" href="/procOp?name=${procRow[3]}&op=Console">Console</a>
+				</div>
 			</td>
 			% endif
 		</tr>

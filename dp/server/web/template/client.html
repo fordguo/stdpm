@@ -9,7 +9,7 @@
 		${msg}
 	</div>
 % endif
-<table class="table table-striped table-bordered table-condensed">
+<table class="table table-striped table-bordered table-condensed  table-hover">
 	<thead>
 		<tr>
 			<th>Client Ip</th>
@@ -17,7 +17,7 @@
 			<th>Status</th>
 			<th>Last Conneted</th>
 			<th>File Updated</th>
-			<th style="width:230px;">Operations</th>
+			<th style="width:200px;">Operations</th>
 		<tr>
 	</thead>
 	<tbody>
@@ -40,11 +40,13 @@
 				% if  isRun(key):
 				<form class="form-inline" style="margin-bottom:2px;" method="POST" action="/clientOp">
 				<input type="hidden" name="ip" value="${key}"></input>
+				<div class="btn-group">
 				<input class="btn" type="submit" name="op" value="Restart" onclick="return confirm('Are you sure to restart ${key}?');"></input>
 				% if canUpdate:
 				<input class="btn" type="submit" name="op" value="Update" onclick="return confirm('Are you sure to update ${key}?');"></input>
 				% endif
-				<input class="btn" type="submit" name="op" value="Reload"></input>
+				<input class="btn btn-info" type="submit" name="op" value="Reload"></input>
+				</div>
 				</form>
 				% endif
 			</td>

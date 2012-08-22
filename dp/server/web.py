@@ -15,7 +15,7 @@ import yaml
 from mako.template import Template
 from mako.lookup import TemplateLookup
 
-from dp.common import LPConfig,dpDir,selfFileSet
+from dp.common import LPConfig,dpDir,selfFileSet,SEP
 from dp.server.main import getDb,clientIpDict,getStatus,isRun,countStop,uniqueProcName,\
   splitProcName,checkUpdateDir
 
@@ -127,7 +127,7 @@ class ProcessResource(Resource):
         grpName,procName = [row[0],row[1]]
         uniName = uniqueProcName(currentIp,grpName,procName)
         procStatus = getStatus(uniName)
-        procRow = [procName,procStatus['status'],fmtDate(procStatus['lastUpdated']),uniName,fmtDate(procStatus.get('fileUpdated'))]
+        procRow = [procName,procStatus['status'],fmtDate(procStatus['lastUpdated']),uniName,fmtDate(procStatus.get('fileUpdated')),]
         procGrp =  procDict.get(grpName)
         if procGrp is None:
           procGrp = [procRow]
@@ -143,7 +143,7 @@ class ProcessResource(Resource):
 class ProcOpResource(Resource):
   def render_GET(self,request):
     name = request.args.get('name')[0]
-    clientip,pgName,psName = name.split(':')
+    clientip,pgName,psName = name.split(SEP)
     defQueue = defer.DeferredQueue(1,1)
     defQueue.get().addCallback(lambda x:request.write(getTemplateContent('consoleLog',psLabel='%s:%s'%(pgName,psName),logContent=x))).addBoth(finishRequest,request)
     clientIpDict[clientip]['protocol'].asyncSendJson({'action':'procOp','op':'Console','grp':pgName,'name':psName},defQueue)
@@ -151,7 +151,7 @@ class ProcOpResource(Resource):
   def render_POST(self, request):
     cmdStr = request.args['op'][0]
     name = request.args.get('name')[0]
-    names = name.split(":")
+    names = name.split(SEP)
     ip = names[0]
     msg = '%s remote://%s/%s/%s'%(cmdStr,ip,names[1],names[2])
     def delayRender(msg,alert='info'):

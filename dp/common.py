@@ -20,6 +20,8 @@ CR = '\r\n' if platform.platform().find("Windows")==0 else '\n'
 
 PS_BASIC = ['executable','args','path','user','group','usePTY','childFDs']
 
+SEP = '_-_'
+
 def changeDpDir(newDir):
   global _datarootDir
   checkDir(newDir)
