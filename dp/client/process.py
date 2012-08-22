@@ -5,7 +5,7 @@ from twisted.internet import error,reactor,protocol
 from twisted.python.logfile import DailyLogFile,LogFile
 from datetime import datetime
 from dp.common import SIGNAL_NAME,PROC_STATUS,getDatarootDir,dpDir,LPConfig,TIME_FORMAT,CR
-from dep_resolver import resortPs,SEP
+from dep_resolver import resortPs,DEP_SEP
 
 import os,time
 import yaml
@@ -37,7 +37,7 @@ def _getFname(fullFile):
 
 def startAll():
   for uniName in resortPs(procGroupDict):
-    gpName,psName = uniName.split(SEP)
+    gpName,psName = uniName.split(DEP_SEP)
     procGroupDict[gpName].startProc(psName)
 
 def stopAll():

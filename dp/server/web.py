@@ -28,14 +28,14 @@ webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',out
 activeCssDict = {'procActiveCss':'','clientActiveCss':'','aboutActiveCss':''}
 
 class IFlash(Interface):
-    msg = Attribute("A temp message.")
-    alert = Attribute("A temp alert level.")
+  msg = Attribute("A temp message.")
+  alert = Attribute("A temp alert level.")
 
 class Flash(object):
-    implements(IFlash)
-    def __init__(self, session):
-        self.msg = ''
-        self.alert = 'info'
+  implements(IFlash)
+  def __init__(self, session):
+    self.msg = ''
+    self.alert = 'info'
 
 registerAdapter(Flash, Session, IFlash)
 
@@ -61,6 +61,8 @@ class RootResource(Resource):
       return ProcessInfoResource()
     elif name=='procOp':
       return ProcOpResource()
+    elif name=='groupOp':
+      return GroupOpResource()
     else:
       self._changeActiveCss('procActiveCss')
       return ProcessResource()
@@ -141,41 +143,40 @@ class ProcessResource(Resource):
     return NOT_DONE_YET
 
 class ProcOpResource(Resource):
-  def render_GET(self,request):
-    name = request.args.get('name')[0]
-    clientip,pgName,psName = name.split(SEP)
-    defQueue = defer.DeferredQueue(1,1)
-    defQueue.get().addCallback(lambda x:request.write(getTemplateContent('consoleLog',psLabel='%s:%s'%(pgName,psName),logContent=x))).addBoth(finishRequest,request)
-    clientIpDict[clientip]['protocol'].asyncSendJson({'action':'procOp','op':'Console','grp':pgName,'name':psName},defQueue)
-    return NOT_DONE_YET
-  def render_POST(self, request):
+  def render_GET(self, request):
     cmdStr = request.args['op'][0]
     name = request.args.get('name')[0]
-    names = name.split(SEP)
-    ip = names[0]
-    msg = '%s remote://%s/%s/%s'%(cmdStr,ip,names[1],names[2])
-    def delayRender(msg,alert='info'):
-      flash = IFlash(request.getSession())
-      flash.msg = msg
-      flash.alert = alert
-      request.redirect('/proc')
-      finishRequest(None,request)
-    if cmdStr=='Restart':
-      clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
-      reactor.callLater(0.5,delayRender,msg)
-    elif cmdStr == 'Update':
-      def procInfo(result,msg):
-        yamContent = result[0][0]
-        lp = LPConfig(yaml.load(yamContent))
-        alert = 'info'
-        if lp.fileUpdateInfo():
-          clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
-        else:
-          msg += " invalid"
-          alert = 'error'
-        delayRender(msg,alert)
-      getDb().runQuery('SELECT procInfo FROM Process WHERE clientIp = ? and procGroup = ? and procName = ?',\
-      [ip,names[1],names[2]]).addCallback(procInfo,msg)
+    if cmdStr=='Console':
+      clientip,pgName,psName = name.split(SEP)
+      defQueue = defer.DeferredQueue(1,1)
+      defQueue.get().addCallback(lambda x:request.write(getTemplateContent('consoleLog',psLabel='%s:%s'%(pgName,psName),logContent=x))).addBoth(finishRequest,request)
+      clientIpDict[clientip]['protocol'].asyncSendJson({'action':'procOp','op':'Console','grp':pgName,'name':psName},defQueue)
+    else:      
+      names = name.split(SEP)
+      ip = names[0]
+      msg = '%s remote://%s/%s/%s'%(cmdStr,ip,names[1],names[2])
+      def delayRender(msg,alert='info'):
+        flash = IFlash(request.getSession())
+        flash.msg = msg
+        flash.alert = alert
+        request.redirect('/proc')
+        finishRequest(None,request)
+      if cmdStr=='Restart':
+        clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
+        reactor.callLater(0.5,delayRender,msg)
+      elif cmdStr == 'Update':
+        def procInfo(result,msg):
+          yamContent = result[0][0]
+          lp = LPConfig(yaml.load(yamContent))
+          alert = 'info'
+          if lp.fileUpdateInfo():
+            clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
+          else:
+            msg += " invalid"
+            alert = 'error'
+          delayRender(msg,alert)
+        getDb().runQuery('SELECT procInfo FROM Process WHERE clientIp = ? and procGroup = ? and procName = ?',\
+        [ip,names[1],names[2]]).addCallback(procInfo,msg)
     return NOT_DONE_YET
 
 class ProcessInfoResource(ProcessResource):
@@ -189,6 +190,27 @@ class ProcessInfoResource(ProcessResource):
         grpName=grpName,procName=procName,ip=ip,yamContent=yamContent,**activeCssDict))
     getDb().runQuery('SELECT procInfo FROM Process WHERE clientIp = ? and procGroup = ? and procName = ?',\
       [ip,grpName,procName]).addCallback(procInfo).addBoth(finishRequest,request)
+    return NOT_DONE_YET
+
+class GroupOpResource(Resource):
+  def render_GET(self, request):
+    cmdStr = request.args['op'][0]
+    name = request.args.get('name')[0]
+    names = name.split(SEP)
+    ip = names[0]
+    msg = '%s remote group : %s/%s'%(cmdStr,ip,names[1])
+    def delayRender(msg,alert='info'):
+      flash = IFlash(request.getSession())
+      flash.msg = msg
+      flash.alert = alert
+      request.redirect('/proc')
+      finishRequest(None,request)
+    if cmdStr=='Restart':
+      clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'groupOp','op':cmdStr,'grp':names[1]}))
+      reactor.callLater(0.5,delayRender,msg)
+    elif cmdStr=='Update':
+      clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'groupOp','op':cmdStr,'grp':names[1]}))
+      reactor.callLater(0.5,delayRender,msg)
     return NOT_DONE_YET
 
 root = RootResource()

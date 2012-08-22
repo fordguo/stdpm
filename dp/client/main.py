@@ -81,19 +81,38 @@ class CoreClient(NetstringReceiver):
       if op=='Restart':
         process.restartProc(psGroup,psName)
       elif op=='Update':
-        lp = process.getLPConfig(psGroup,psName)
-        if lp:
-          updateInfo = lp.fileUpdateInfo()
-          if len(updateInfo) > 0:
-            downloadFiles(self.config,updateInfo[1][1],psGroup,psName,updateInfo[0][1],self)
-        else:
-          print 'can not found LPConfig with '+json
+        self._updateProc(psGroup,psName)
       elif op=='Console':
         self.sendTxt(json['uuid'],process.getPsLog(psGroup,psName))
       else:
         print 'unknown procOp value:'+op
+    elif action=='groupOp':
+      psGroup = json['grp']
+      op = json['op']
+      if op=='Restart':
+        pg = procGroupDict.get(psGroup)
+        if pg:
+          for name,proc in pg.iterStatus():
+            pg.restartProc(name)
+        else:
+          print 'restart group,can not found process group:'+psGroup
+      elif op=='Update':
+        pg = procGroupDict.get(psGroup)
+        if pg:
+          for name,proc in pg.iterStatus():
+            self._updateProc(psGroup,name)
+        else:
+          print 'update group,can not found process group:'+psGroup
     else:
       print 'unknown json %s'%json
+  def _updateProc(self,grpName,procName):
+    lp = process.getLPConfig(grpName,procName)
+    if lp:
+      updateInfo = lp.fileUpdateInfo()
+      if len(updateInfo) > 0:
+        downloadFiles(self.config,updateInfo[1][1],grpName,procName,updateInfo[0][1],self)
+    else:
+      print 'can not found LPConfig with '+json
   def sendJson(self,string):
     self.sendString("json:%s"%string)
 
