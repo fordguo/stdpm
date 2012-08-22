@@ -99,12 +99,14 @@ def getPsLog(psGroup,psName):
     localValue = pg.locals.get(psName)
     if localValue:
       localProc = localValue[0]
-      fsize = os.path.getsize(localProc.logFile.path)
-      with open(localProc.logFile.path,'r') as f:
-        if fsize>LAST_END:
-          f.seek(-LAST_END,os.SEEK_END)
-        return f.read()
+      return _logContent(localProc.logFile.path)
   return None
+def _logContent(fname,startPos=-LAST_END,pos=os.SEEK_END):
+  fsize = os.path.getsize(fname)
+  with open(fname,'r') as f:
+    if fsize>abs(startPos):
+      f.seek(startPos,pos)
+    return f.read()
 
 class ProcessGroup:
   def __init__(self,yamlFile):
@@ -185,18 +187,21 @@ class LocalProcess(protocol.ProcessProtocol):
     self.group = group
     self.logFile = LogFile(self.name+".log",group.groupDir,maxRotatedFiles=10)
     self.updateLogFile = LogFile(self.name+".ulog",group.groupDir,rotateLength=1000000000,maxRotatedFiles=3)#100M
+    self.ssLogFile = LogFile(self.name+".slog",group.groupDir,rotateLength=1000000000,maxRotatedFiles=3)#100M
     self.status = PROC_STATUS.STOP
     self.endTime = None
 
   def connectionMade(self):
     self.status = PROC_STATUS.RUN#todo add support startCompletion check
-    self._writeLog("[processStarted] at:%s"%(datetime.now().strftime(TIME_FORMAT)))
+    self._ssLog("[processStarted] at:%s"%(datetime.now().strftime(TIME_FORMAT)))
     global sendStatusFunc
     if sendStatusFunc:
       sendStatusFunc(self.group.name,self.orgName,self.status)
 
   def _writeLog(self,data):
     self.logFile.write("%s%s"%(data,CR)) 
+  def _ssLog(self,data):
+    self.ssLogFile.write("%s%s"%(data,CR)) 
   def logUpdate(self,fname):
     _updateLog(self.updateLogFile,fname)
 
@@ -223,11 +228,11 @@ class LocalProcess(protocol.ProcessProtocol):
   def processEnded(self,reason):
     self.endTime = datetime.now()
     if reason.value.exitCode is None:
-      self._writeLog("[processEnded] code is None,info:%s"% (reason))
+      self._ssLog("[processEnded] code is None,info:%s"% (reason))
     elif reason.value.exitCode != 0 :
-      self._writeLog("[processEnded] code:%d,info:%s"% (reason.value.exitCode,reason))
+      self._ssLog("[processEnded] code:%d,info:%s"% (reason.value.exitCode,reason))
     self.status = PROC_STATUS.STOP
-    self._writeLog("[processEnded] at:%s"%(self.endTime.strftime(TIME_FORMAT)))
+    self._ssLog("[processEnded] at:%s"%(self.endTime.strftime(TIME_FORMAT)))
     global sendStatusFunc
     if sendStatusFunc:
       sendStatusFunc(self.group.name,self.orgName,self.status)
