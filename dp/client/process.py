@@ -13,7 +13,7 @@ import glob
 
 procGroupDict = {}
 sendStatusFunc = None
-LAST_END = 8192
+LAST_END = 4096
 
 def registerSendStatus(func):
   global sendStatusFunc

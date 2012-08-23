@@ -1,0 +1,39 @@
+<%page args="totalSize,curPage,pageSize=4096"/>
+<%
+  pages = int(round(float(totalSize)/pageSize+.5))
+  if curPage is None: curPage=pages
+  def checkFlag(curPgSize):
+    return 'checked' if int(pageSize)==int(curPgSize) else ''
+  def csActive(i):
+    return 'class="active"' if i == curPage else ''
+%>
+<%def name="tmp(i)">
+</%def>
+<div class="pull-left">
+<span class="inline">Total size : &nbsp;${totalSize} &nbsp;bytes</span>
+</div>
+<div class="pull-right">
+<span class="inline">Page size :&nbsp;</span>
+<label class="radio inline">
+  <input type="radio" name="pgSize" id="pg4" value="4096" ${checkFlag(4096)}> 4K
+</label>
+<label class="radio inline">
+  <input type="radio" name="pgSize" id="pg8" value="8192" ${checkFlag(8192)}> 8K
+</label> 
+<span class="inline">&nbsp;bytes</span>
+</div>
+<div class="pagination pagination-centered">
+% if pages > 1:
+ <ul>
+    <li class="disabled"><a href="#">«</a></li>
+  % if pages <= 6:
+    % for i in range(0,pages):
+      <li ${csActive(i+1)}><a href="#">${i+1}</a></li>
+    % endfor
+  % else:
+    "kk"
+  % endif
+    <li><a href="#">»</a></li>
+  </ul>
+% endif
+</div> 

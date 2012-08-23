@@ -56,7 +56,7 @@ class RootResource(Resource):
     elif name=='about':
       self._changeActiveCss('aboutActiveCss')
       return AboutResource()
-    elif name=='clientProcConfInfo':
+    elif name=='clientConfInfo':
       self._changeActiveCss('procActiveCss')
       return ProcessConfInfoResource()
     elif name=='clientConsoleInfo':
@@ -201,9 +201,11 @@ class ProcessConsoleInfoResource(ProcessResource):
   def render_GET(self, request):
     uniName = request.args.get('name')
     if uniName is None:request.redirect("/")
-    ip,grpName,procName = splitProcName(uniName[0])
+    clientip,pgName,psName = splitProcName(uniName[0])
     defQueue = defer.DeferredQueue(1,1)
-    defQueue.get().addCallback(lambda x:request.write(getTemplateContent('procConsoleInfo',uniName=uniName[0],logContent=x))).addBoth(finishRequest,request)
+    defQueue.get().addCallback(lambda x:request.write(getTemplateContent('procConsoleInfo',\
+      clientSideArgs=self._initClientSideArgs(clientip),grpName=pgName,procName=psName,ip=clientip,\
+      uniName=uniName[0],logInfo=x,**activeCssDict))).addBoth(finishRequest,request)
     clientIpDict[clientip]['protocol'].asyncSendJson({'action':'procOp','op':'Console','grp':pgName,'name':psName},defQueue)
     return NOT_DONE_YET
 
