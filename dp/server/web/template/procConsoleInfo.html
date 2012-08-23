@@ -1,0 +1,11 @@
+<%inherit file="procInfoBase.html"/>
+<ul class="nav nav-tabs">
+  <li><a href="/clientConfInfo?name=${uniName}">Configure</a></li>
+  <li class="active"><a href="#">Console</a></li>
+  <li><a href="/clientLogInfo?name=${uniName}">Log File</a></li>
+  <li><a href="/clientStartHistory?name=${uniName}">Start History</a></li>
+  <li><a href="/clientUpdateHistory?name=${uniName}">Update History</a></li>
+</ul>
+<div class="well well-small">
+  <pre>${logContent}</pre>
+</div>

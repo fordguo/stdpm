@@ -1,0 +1,21 @@
+<%inherit file="procInfoBase.html"/>
+<%block name="headLinks">
+  <link href="/static/css/prettify.css" type="text/css" rel="stylesheet" />
+</%block>
+<ul class="nav nav-tabs">
+  <li class="active"><a href="#">Configure</a></li>
+  <li><a href="/clientConsoleInfo?name=${uniName}">Console</a></li>
+  <li><a href="/clientLogInfo?name=${uniName}">Log File</a></li>
+  <li><a href="/clientStartHistory?name=${uniName}">Start History</a></li>
+  <li><a href="/clientUpdateHistory?name=${uniName}">Update History</a></li>
+</ul>
+<div class="well well-small">
+<pre class="prettyprint lang-yaml ">
+${yamContent}
+</pre>
+</div>
+<%block name="footScripts">
+  <script type="text/javascript" src="/static/js/prettify.js"></script>
+  <script type="text/javascript" src="/static/js/lang-yaml.js"></script>
+  <script type="text/javascript">$(function () {prettyPrint()});</script>
+</%block>

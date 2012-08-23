@@ -13,7 +13,7 @@ from dp.common import JSON,JSON_LEN,changeDpDir,selfFileSet,SEP
 
 client = None
 
-version="1.0.2"
+version="1.0.3"
 
 loopCount = 0
 
@@ -84,7 +84,7 @@ class CoreClient(NetstringReceiver):
       elif op=='Update':
         self._updateProc(psGroup,psName)
       elif op=='Console':
-        self.sendTxt(json['uuid'],process.getPsLog(psGroup,psName))
+        self.sendLogTxt(json['uuid'],*(process.getPsLog(psGroup,psName)))
       else:
         print 'unknown procOp value:'+op
     elif action=='groupOp':
@@ -120,6 +120,9 @@ class CoreClient(NetstringReceiver):
   def sendYaml(self,string):
     self.sendString("yaml:%s"%string)
 
+  def sendLogTxt(self,uuid,content,size,modifyTime,suffixes):
+    self.sendTxt(uuid,'%(size)d%(sep)s%(modifyTime)d%(sep)s%(suffixes)s%(sep)s%(content)s'%{'sep':SEP,'size':size,\
+      'modifyTime':modifyTime,'suffixes':suffixes,'content':content})
   def sendTxt(self,uuid,string):
     if string is None:
       string = 'No Data'

@@ -11,7 +11,7 @@ import json
 
 from dp.common import PROC_STATUS,getDatarootDir,checkDir,JSON,JSON_LEN,changeDpDir,selfFileSet,dpDir,TIME_FORMAT,SEP
 
-version = "1.0.2"
+version = "1.0.3"
 
 DEFAULT_INVALID = {'status':PROC_STATUS.STOP,'lastUpdated':None,'fileUpdated':None}
 DATA_DIR="data"
@@ -119,8 +119,23 @@ class CoreServer(NetstringReceiver):
       uuidStr = string[TXT_LEN:idx]
       value = self.uuidDict.get(uuidStr)
       if value:
-        value.put(string[idx+1:])
+        content = string[idx+1:]
+        val,idx = self._findSepContent(content,None)
+        valMap = {'size':long(val)}
+        val,idx = self._findSepContent(content,idx)
+        valMap['time'] = long(val)
+        val,idx = self._findSepContent(content,idx)
+        valMap['suffixes'] = val
+        valMap['content'] = content[idx+len(SEP):]
+        value.put(valMap)
         del self.uuidDict[uuidStr]
+  def _findSepContent(self,string,idx=None):
+    if idx is None:
+      idx = -len(SEP)
+      nIdx = string.find(SEP)
+    else:
+      nIdx =  string.find(SEP,idx+1)
+    return string[idx+len(SEP):nIdx],nIdx
   def _processJson(self,json):
     action = json.get('action')
     clientIp = self._getIp()

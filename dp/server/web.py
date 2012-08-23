@@ -56,9 +56,12 @@ class RootResource(Resource):
     elif name=='about':
       self._changeActiveCss('aboutActiveCss')
       return AboutResource()
-    elif name=='clientProcInfo':
+    elif name=='clientProcConfInfo':
       self._changeActiveCss('procActiveCss')
-      return ProcessInfoResource()
+      return ProcessConfInfoResource()
+    elif name=='clientConsoleInfo':
+      self._changeActiveCss('procActiveCss')
+      return ProcessConsoleInfoResource()
     elif name=='procOp':
       return ProcOpResource()
     elif name=='groupOp':
@@ -151,7 +154,7 @@ class ProcOpResource(Resource):
     if cmdStr=='Console':
       clientip,pgName,psName = name.split(SEP)
       defQueue = defer.DeferredQueue(1,1)
-      defQueue.get().addCallback(lambda x:request.write(getTemplateContent('consoleLog',psLabel='%s:%s'%(pgName,psName),logContent=x))).addBoth(finishRequest,request)
+      defQueue.get().addCallback(lambda x:request.write(getTemplateContent('consoleLog',psLabel='%s:%s'%(pgName,psName),logContent=x['content']))).addBoth(finishRequest,request)
       clientIpDict[clientip]['protocol'].asyncSendJson({'action':'procOp','op':'Console','grp':pgName,'name':psName},defQueue)
     else:      
       names = name.split(SEP)
@@ -181,17 +184,27 @@ class ProcOpResource(Resource):
         [ip,names[1],names[2]]).addCallback(procInfo,msg)
     return NOT_DONE_YET
 
-class ProcessInfoResource(ProcessResource):
+class ProcessConfInfoResource(ProcessResource):
   def render_GET(self, request):
     uniName = request.args.get('name')
     if uniName is None:request.redirect("/")
     ip,grpName,procName = splitProcName(uniName[0])
     def procInfo(result):
       yamContent = result[0][0]
-      request.write(getTemplateContent('procInfo',clientSideArgs=self._initClientSideArgs(ip),\
-        grpName=grpName,procName=procName,ip=ip,yamContent=yamContent,**activeCssDict))
+      request.write(getTemplateContent('procConfInfo',clientSideArgs=self._initClientSideArgs(ip),\
+        grpName=grpName,procName=procName,ip=ip,yamContent=yamContent,uniName=uniName[0],**activeCssDict))
     getDb().runQuery('SELECT procInfo FROM Process WHERE clientIp = ? and procGroup = ? and procName = ?',\
       [ip,grpName,procName]).addCallback(procInfo).addBoth(finishRequest,request)
+    return NOT_DONE_YET
+
+class ProcessConsoleInfoResource(ProcessResource):
+  def render_GET(self, request):
+    uniName = request.args.get('name')
+    if uniName is None:request.redirect("/")
+    ip,grpName,procName = splitProcName(uniName[0])
+    defQueue = defer.DeferredQueue(1,1)
+    defQueue.get().addCallback(lambda x:request.write(getTemplateContent('procConsoleInfo',uniName=uniName[0],logContent=x))).addBoth(finishRequest,request)
+    clientIpDict[clientip]['protocol'].asyncSendJson({'action':'procOp','op':'Console','grp':pgName,'name':psName},defQueue)
     return NOT_DONE_YET
 
 class GroupOpResource(Resource):

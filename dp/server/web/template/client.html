@@ -42,12 +42,19 @@
 				% if  isRun(key):
 				<form class="form-inline" style="margin-bottom:2px;" method="POST" action="/clientOp">
 				<input type="hidden" name="ip" value="${key}"></input>
-				<div class="btn-group">
-				<input class="btn" type="submit" name="op" value="Restart" onclick="return confirm('Are you sure to restart ${key}?');"></input>
-				% if canUpdate:
-				<input class="btn" type="submit" name="op" value="Update" onclick="return confirm('Are you sure to update ${key}?');"></input>
-				% endif
-				<input class="btn btn-info" type="submit" name="op" value="Reload"></input>
+				<div class="btn-toolbar" style="margin: 0;">
+					<div class="btn-group">
+					 	<a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+					    	<i class="icon-hdd"></i>  Action<span class="caret"></span>
+					 	</a>
+					 	<ul class="dropdown-menu">
+							<button class="btn btn-link" type="submit" name="op" value="Restart" onclick="return confirm('Are you sure to restart ${key}?');"><i class="icon-retweet"></i> Restart</button>
+							% if canUpdate:
+							<button class="btn btn-link" type="submit" name="op" value="Update" onclick="return confirm('Are you sure to update ${key}?');"><i class="icon-check"></i> Update</button>
+							% endif
+						</ul>
+					</div>
+					<button class="btn btn-info" type="submit" name="op" value="Reload"><i class="icon-refresh icon-white"></i> Reload</button>
 				</div>
 				</form>
 				% endif
