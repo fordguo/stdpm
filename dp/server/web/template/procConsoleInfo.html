@@ -10,7 +10,7 @@
 import time 
 from dp.common import TIME_FORMAT
 %>
-<%include file="pagination.html" args="totalSize=logInfo['size'],curPage=None,pageSize=4096"/>
+<%include file="pagination.html" args="totalSize=logInfo['size'],curPage=curPage,pageSize=pageSize,url='/clientConsoleInfo?name=%s'%uniName"/>
 <span>Last Modified : &nbsp;${time.strftime(TIME_FORMAT,time.localtime(logInfo['time']))}</span>
 <div class="well well-small">
   <pre class="pre-scrollable">

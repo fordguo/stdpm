@@ -1,4 +1,4 @@
-<%page args="totalSize,curPage,pageSize=4096"/>
+<%page args="totalSize,curPage,pageSize=4096,url='#'"/>
 <%
   pages = int(round(float(totalSize)/pageSize+.5))
   if curPage is None: curPage=pages
@@ -6,6 +6,13 @@
     return 'checked' if int(pageSize)==int(curPgSize) else ''
   def csActive(i):
     return 'class="active"' if i == curPage else ''
+  def csDisable(i):
+    return 'class="disabled"' if i==curPage else ''
+  def getHref(pageNo):
+    if pageNo==curPage or pageNo < 1 :
+      return '#'
+    else:
+      return '%s&curPage=%d&pageSize=%d'%(url,pageNo,pageSize)
 %>
 <%def name="tmp(i)">
 </%def>
@@ -25,15 +32,15 @@
 <div class="pagination pagination-centered">
 % if pages > 1:
  <ul>
-    <li class="disabled"><a href="#">«</a></li>
+    <li ${csDisable(1)}><a href="${getHref(curPage-1)}">«</a></li>
   % if pages <= 6:
     % for i in range(0,pages):
-      <li ${csActive(i+1)}><a href="#">${i+1}</a></li>
+      <li ${csActive(i+1)}><a href="${getHref(i+1)}">${i+1}</a></li>
     % endfor
   % else:
     "kk"
   % endif
-    <li><a href="#">»</a></li>
+    <li ${csDisable(pages)}><a href="${getHref(curPage+1)}">»</a></li>
   </ul>
 % endif
 </div> 

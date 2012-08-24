@@ -27,6 +27,10 @@ webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',out
 
 activeCssDict = {'procActiveCss':'','clientActiveCss':'','aboutActiveCss':''}
 
+def convertPage(curPage,pageSize):
+  if curPage is None: return {}
+  startPos = (curPage-1)*pageSize
+  return {'startPos':startPos,'endPos':startPos+pageSize}
 class IFlash(Interface):
   msg = Attribute("A temp message.")
   alert = Attribute("A temp alert level.")
@@ -201,12 +205,18 @@ class ProcessConsoleInfoResource(ProcessResource):
   def render_GET(self, request):
     uniName = request.args.get('name')
     if uniName is None:request.redirect("/")
+    curPage = request.args.get('curPage')
+    pageSize = request.args.get('pageSize')
+    if curPage is not None: curPage = int(curPage[0])
+    pageSize = 4096 if pageSize is None else int(pageSize[0])
     clientip,pgName,psName = splitProcName(uniName[0])
     defQueue = defer.DeferredQueue(1,1)
     defQueue.get().addCallback(lambda x:request.write(getTemplateContent('procConsoleInfo',\
       clientSideArgs=self._initClientSideArgs(clientip),grpName=pgName,procName=psName,ip=clientip,\
-      uniName=uniName[0],logInfo=x,**activeCssDict))).addBoth(finishRequest,request)
-    clientIpDict[clientip]['protocol'].asyncSendJson({'action':'procOp','op':'Console','grp':pgName,'name':psName},defQueue)
+      uniName=uniName[0],logInfo=x,curPage=curPage,pageSize=pageSize,**activeCssDict))).addBoth(finishRequest,request)
+    jsonArgs = {'action':'procOp','op':'Console','grp':pgName,'name':psName}
+    jsonArgs.update(convertPage(curPage,pageSize))
+    clientIpDict[clientip]['protocol'].asyncSendJson(jsonArgs,defQueue)
     return NOT_DONE_YET
 
 class GroupOpResource(Resource):
