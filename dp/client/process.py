@@ -108,7 +108,7 @@ def getPsLog(psGroup,psName,startPos=None,endPos=None,suffix=None,logType='conso
       elif logType=='update':
         return _logContent(localProc.updateLogFile.path,startPos,endPos,suffix,checkSuffix)
   return None,None,None,None
-def _logContent(fname,startPos=None,endPos=None,suffix=None,checkSuffix):
+def _logContent(fname,startPos=None,endPos=None,suffix=None,checkSuffix=True):
   suffixes = ''
   mtime = None
   if checkSuffix:
@@ -145,6 +145,7 @@ class ProcessGroup:
       conf = localValue[1]
     else:
       conf = LPConfig(procInfo)
+      conf.verifyLog()
       localValue = [localProc,conf]
       self.locals[name] = localValue
     localProc.startMemo = memo

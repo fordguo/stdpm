@@ -51,6 +51,7 @@ class CoreClient(NetstringReceiver):
       for name,proc in procGroup.iterStatus():
         self.sendProcStatus(procGroup.name,name,proc[0].status)
         self.sendFileUpdate(procGroup.name,name,lastFileUpdateTime(procGroup.name,name))
+        self.sendJson(json.dumps({'action':'procLogInfo','group':procGroup.name,'name':name,'monLog':proc[1].monLog}))
   def connectionLost(self, reason):
     global client
     client = None

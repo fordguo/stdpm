@@ -1,12 +1,22 @@
+<%!
+    from dp.server.main import isRun
+%>
 <%inherit file="procBase.html"/>
 <h2>${grpName} :: ${procName}<a class="btn btn-small btn-primary pull-right" style="margin-right:20px;" href="/clientProc?ip=${ip}">Return</a></h2>
 <p/>
 ${next.body()}
 <a class="btn btn-primary" href="/clientProc?ip=${ip}">Return</a>
 <%def name="logUrl(monLog,uniName)">
-	% if monLog:
+	% if monLog and isRun(ip):
 		<li><a href="/clientLogInfo?name=${uniName}">Log File</a></li>
 	% else:
 		<li class="disabled"><a href="#">Log File</a></li>
+	% endif
+</%def>
+<%def name="navUrl(url,label)">
+	% if url and isRun(ip):
+		<li><a href="${url}">${label}</a></li>
+	% else:
+		<li class="disabled"><a href="#">${label}</a></li>
 	% endif
 </%def>

@@ -160,6 +160,9 @@ class CoreServer(NetstringReceiver):
         name = clientIp
       if json['datetime']:
         resourceDict.get(name)['fileUpdated'] = datetime.strptime(json['datetime'],TIME_FORMAT)
+    elif action=='procLogInfo':
+      name = self._procName(json)
+      resourceDict.get(name)['monLog'] = json['monLog']
     else:
       print 'unknow json:',json
   def _procName(self,value):

@@ -56,12 +56,29 @@ class LPConfig(object):
     self.args = self.confDict.pop("args",())
     self.execArgs = [self.executable]+[str(x) for x in self.args]
     self.usePTY = self.confDict.pop('usePTY',False)
+    self.path = self.confDict.pop('path','.')
     monValue = self.monitorValue()
     self.monEnable = monValue[0][1]
     self.monLog = None
+    self.logFullName = None
     if len(monValue)>1:
-      self.monLog = monValue[1][1]
-      self.monKeyword = monValue[2][1]
+      self.monLog = monValue[1][1][0][1]
+      self.monKeyword = monValue[1][1][1][1]
+  def verifyLog(self):
+    if not self._existFile(self.monLog):
+      self.monLog = None
+  def _existFile(self,fname):
+    if fname is None: return False
+    if not os.path.exists(fname):
+      fullPath = os.path.join(self.path,fname)
+      if os.path.exists(fullPath):
+        self.logFullName = fullPath
+        return True
+      else:
+        return False
+    else:
+      self.logFullName = fname
+      return True
   def __getattr__(self, name):
     if self.__dict__.has_key(name):
       return self.__dict__[name]
@@ -90,7 +107,7 @@ class LPConfig(object):
     result.append(('enable',mValue.get('enable')))
     if mValue.has_key('log'):
       lDict = mValue.get('log')
-      if lDict.get('file') is not None and lDict.get('keyword') is not None:
+      if lDict.get('file') is not None :
         result.append(('log',[('file',lDict.get('file')),('keyword',lDict.get('keyword'))]))
     return result
   def fileUpdateInfo(self):
