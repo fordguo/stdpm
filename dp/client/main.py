@@ -71,7 +71,7 @@ class CoreClient(NetstringReceiver):
         downloadFiles(self.config,selfFileSet)
       elif value=='Reload':
         process.initYaml()
-        process.startAll()
+        process.startAll('reload')
         self._initSend()
       else:
         print 'unknown clientOp value:'+value
@@ -80,7 +80,7 @@ class CoreClient(NetstringReceiver):
       psName = json['name']
       op = json['op']
       if op=='Restart':
-        process.restartProc(psGroup,psName)
+        process.restartProc(psGroup,psName,memo='manual')
       elif op=='Update':
         self._updateProc(psGroup,psName)
       elif op=='Console':
@@ -94,7 +94,7 @@ class CoreClient(NetstringReceiver):
         pg = procGroupDict.get(psGroup)
         if pg:
           for name,proc in pg.iterStatus():
-            pg.restartProc(name)
+            pg.restartProc(name,memo='group')
         else:
           print 'restart group,can not found process group:'+psGroup
       elif op=='Update':
@@ -146,7 +146,7 @@ def makeService(config):
   clientService = service.MultiService()
   changeDpDir(config['dataDir'])
   process.initYaml()
-  process.startAll()
+  process.startAll('first')
   looping.start(60)
   internet.TCPClient(config['server'],int(config['port']), CoreClientFactory(config)).setServiceParent(clientService)
   def shutdown():

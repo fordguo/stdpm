@@ -4,7 +4,7 @@
 from twisted.internet import error,reactor,protocol
 from twisted.python.logfile import DailyLogFile,LogFile
 from datetime import datetime
-from dp.common import SIGNAL_NAME,PROC_STATUS,getDatarootDir,dpDir,LPConfig,TIME_FORMAT,CR
+from dp.common import SIGNAL_NAME,PROC_STATUS,getDatarootDir,dpDir,LPConfig,TIME_FORMAT,CR,SEP
 from dep_resolver import resortPs,DEP_SEP
 
 import os,time
@@ -35,20 +35,20 @@ def _getFname(fullFile):
     fileName = os.path.basename(fullFile)
     return os.path.splitext(fileName)[0]
 
-def startAll():
+def startAll(memo):
   for uniName in resortPs(procGroupDict):
     gpName,psName = uniName.split(DEP_SEP)
-    procGroupDict[gpName].startProc(psName)
+    procGroupDict[gpName].startProc(psName,memo)
 
 def stopAll():
   for procGroup in procGroupDict.itervalues():
     procGroup.stop()
 
 
-def restartProc(psGroup,psName,secs=10):
+def restartProc(psGroup,psName,secs=10,memo=''):
   pg = procGroupDict.get(psGroup)
   if pg:
-    pg.restartProc(psName,secs)
+    pg.restartProc(psName,secs,memo)
   else:
     print 'can not found process group:'+psGroup
 
@@ -61,7 +61,7 @@ def getLPConfig(psGroup,psName):
   return None
 
 def _updateLog(logFd,fname):
-  logFd.write("%s,%s%s"%(fname,datetime.now().strftime(TIME_FORMAT),CR))
+  logFd.write("%s%s%s%s"%(fname,SEP,datetime.now().strftime(TIME_FORMAT),CR))
 _clientUpdateLogFile = os.path.join(getDatarootDir(),'data','clientUpdateLog.ulog')
 def clientUpdateLog(fname):
   with open(_clientUpdateLogFile,'w+') as f:
@@ -124,7 +124,7 @@ class ProcessGroup:
     self.procsMap = None
     self.locals = {}
     self.reload()
-  def _start(self,name,procInfo):
+  def _start(self,name,procInfo,memo=''):
     localValue = self.locals.get(name)
     localProc = LocalProcess(name,self)
     conf = None
@@ -135,14 +135,15 @@ class ProcessGroup:
       conf = LPConfig(procInfo)
       localValue = [localProc,conf]
       self.locals[name] = localValue
+    localProc.startMemo = memo
     reactor.spawnProcess(localProc,conf.executable, conf.execArgs,conf.env,\
       conf.path,conf.uid,conf.gid,conf.usePTY,conf.childFDs)
   def reload(self):
     self.procsMap = yaml.load(file(self.yamlFile))
-  def startProc(self,procName):
+  def startProc(self,procName,memo=''):
     localProc = self.locals.get(procName)
     if localProc is None or  not localProc[0].isRunning():
-      self._start(procName,self.procsMap[procName])
+      self._start(procName,self.procsMap[procName],memo)
 
   def iterStatus(self):
     return self.locals.iteritems()
@@ -152,31 +153,31 @@ class ProcessGroup:
     for localValue in self.locals.itervalues():
       if localValue[0].isRunning():
         self._forceStopProcess(localValue[0],None,False)
-  def _forceStopProcess(self,localProc,procName,restart=False):
+  def _forceStopProcess(self,localProc,procName,restart=False,memo=''):
     try:
       localProc.signal(SIGNAL_NAME.KILL)
     except error.ProcessExitedAlready:
       pass
     if restart:
       time.sleep(3)
-      self.startProc(procName)
-  def _stopProc(self,localProc,killTime,procName,restart=False):
+      self.startProc(procName,memo)
+  def _stopProc(self,localProc,killTime,procName,restart=False,memo=''):
     try:
       localProc.signal(SIGNAL_NAME.TERM)
     except error.ProcessExitedAlready:
       if restart:
         time.sleep(killTime)
-        self.startProc(procName)
+        self.startProc(procName,memo)
       pass
     else:
-      reactor.callLater(killTime,self._forceStopProcess,localProc,procName,restart)
-  def stopProc(self,procName,killTime=3,restart=False):
+      reactor.callLater(killTime,self._forceStopProcess,localProc,procName,restart,memo)
+  def stopProc(self,procName,killTime=3,restart=False,memo=''):
     localValue = self.locals[procName]
     localProc = localValue[0]
     localProc.status = PROC_STATUS.STOPPING
-    self._stopProc(localProc,killTime,procName,restart)
-  def restartProc(self,procName,secs=10):
-    self.stopProc(procName,secs,True)
+    self._stopProc(localProc,killTime,procName,restart,memo)
+  def restartProc(self,procName,secs=10,memo=''):
+    self.stopProc(procName,secs,True,memo)
   def checkRestart(self):
     now = datetime.now()
     for name,localValue in self.iterStatus():
@@ -184,7 +185,7 @@ class ProcessGroup:
       period = localValue[1].getPeriod()
       if localProc.endTime and not localProc.isRunning() and \
         period is not None and (now-localProc.endTime).seconds > (period*60):
-        self.startProc(name)
+        self.startProc(name,'period')
 
 class LocalProcess(protocol.ProcessProtocol):
   def __init__(self, name,group):
@@ -192,22 +193,24 @@ class LocalProcess(protocol.ProcessProtocol):
     self.name = "".join([x for x in name if x.isalnum()])
     self.group = group
     self.logFile = LogFile(self.name+".log",group.groupDir,maxRotatedFiles=10)
-    self.updateLogFile = LogFile(self.name+".ulog",group.groupDir,rotateLength=1000000000,maxRotatedFiles=3)#100M
-    self.ssLogFile = LogFile(self.name+".slog",group.groupDir,rotateLength=1000000000,maxRotatedFiles=3)#100M
+    self.updateLogFile = LogFile(self.name+".ulog",group.groupDir,rotateLength=100000000,maxRotatedFiles=3)#10M
+    self.ssLogFile = LogFile(self.name+".slog",group.groupDir,rotateLength=100000000,maxRotatedFiles=3)#10M
     self.status = PROC_STATUS.STOP
     self.endTime = None
+    self.startMemo = ''
 
   def connectionMade(self):
     self.status = PROC_STATUS.RUN#todo add support startCompletion check
-    self._ssLog("[processStarted] at:%s"%(datetime.now().strftime(TIME_FORMAT)))
+    self._ssLog("startTime",datetime.now().strftime(TIME_FORMAT),self.startMemo)
+    self.startMemo = ''
     global sendStatusFunc
     if sendStatusFunc:
       sendStatusFunc(self.group.name,self.orgName,self.status)
 
   def _writeLog(self,data):
     self.logFile.write("%s%s"%(data,CR)) 
-  def _ssLog(self,data):
-    self.ssLogFile.write("%s%s"%(data,CR)) 
+  def _ssLog(self,stage,time,memo=''):
+    self.ssLogFile.write("%s%s%s%s%s%s"%(stage,SEP,time,SEP,memo,CR)) 
   def logUpdate(self,fname):
     _updateLog(self.updateLogFile,fname)
 
@@ -234,14 +237,17 @@ class LocalProcess(protocol.ProcessProtocol):
   def processEnded(self,reason):
     self.endTime = datetime.now()
     if reason.value.exitCode is None:
-      self._ssLog("[processEnded] code is None,info:%s"% (reason))
+      self._ssLog("endInfo","code is None,info:%s"% (reason))
     elif reason.value.exitCode != 0 :
-      self._ssLog("[processEnded] code:%d,info:%s"% (reason.value.exitCode,reason))
+      self._ssLog("endInfo", "code:%d,info:%s"%(reason.value.exitCode,reason))
     self.status = PROC_STATUS.STOP
-    self._ssLog("[processEnded] at:%s"%(self.endTime.strftime(TIME_FORMAT)))
+    self._ssLog("endTime",self.endTime.strftime(TIME_FORMAT))
     global sendStatusFunc
     if sendStatusFunc:
       sendStatusFunc(self.group.name,self.orgName,self.status)
+    self.logFile.close()
+    self.updateLogFile.close()
+    self.ssLogFile.close()
 
   def signal(self,signalName):
     self.transport.signalProcess(signalName.name)
