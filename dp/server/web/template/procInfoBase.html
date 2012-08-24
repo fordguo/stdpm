@@ -3,3 +3,10 @@
 <p/>
 ${next.body()}
 <a class="btn btn-primary" href="/clientProc?ip=${ip}">Return</a>
+<%def name="logUrl(monLog,uniName)">
+	% if monLog:
+		<li><a href="/clientLogInfo?name=${uniName}">Log File</a></li>
+	% else:
+		<li class="disabled"><a href="#">Log File</a></li>
+	% endif
+</%def>

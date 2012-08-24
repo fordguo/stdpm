@@ -18,7 +18,6 @@ echo 15:
     log:
       file: null
       keyword: null
-      action: KILL #KILL,TERM,INT
   fileUpdate:
     restart: 
       enable: true

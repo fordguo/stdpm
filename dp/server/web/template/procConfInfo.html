@@ -4,10 +4,10 @@
 </%block>
 <ul class="nav nav-tabs">
   <li class="active"><a href="#">Configure</a></li>
-  <li><a href="/clientConsoleInfo?name=${uniName}">Console</a></li>
-  <li><a href="/clientLogInfo?name=${uniName}">Log File</a></li>
-  <li><a href="/clientStartHistory?name=${uniName}">Start History</a></li>
-  <li><a href="/clientUpdateHistory?name=${uniName}">Update History</a></li>
+  <li><a href="/clientConsoleInfo?name=${uniName}&monLog=${monLog}">Console</a></li>
+  ${self.logUrl(monLog,uniName)}
+  <li><a href="/clientStartHistory?name=${uniName}&monLog=${monLog}">Start History</a></li>
+  <li><a href="/clientUpdateHistory?name=${uniName}&monLog=${monLog}">Update History</a></li>
 </ul>
 <div class="well well-small">
 <pre class="prettyprint lang-yaml pre-scrollable">

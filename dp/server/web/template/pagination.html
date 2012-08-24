@@ -1,6 +1,7 @@
 <%page args="totalSize,curPage,pageSize=4096,url='#'"/>
 <%
   pages = int(round(float(totalSize)/pageSize+.5))
+  midPage = pages/2
   if curPage is None: curPage=pages
   def checkFlag(curPgSize):
     return 'checked' if int(pageSize)==int(curPgSize) else ''
@@ -22,10 +23,10 @@
 <div class="pull-right">
 <span class="inline">Page size :&nbsp;</span>
 <label class="radio inline">
-  <input type="radio" name="pgSize" id="pg4" value="4096" ${checkFlag(4096)}> 4K
+  <input type="radio" name="pgSize" id="pg4" value="4096" ${checkFlag(4096)}  disabled> 4K
 </label>
 <label class="radio inline">
-  <input type="radio" name="pgSize" id="pg8" value="8192" ${checkFlag(8192)}> 8K
+  <input type="radio" name="pgSize" id="pg8" value="8192" ${checkFlag(8192)}  disabled> 8K
 </label> 
 <span class="inline">&nbsp;bytes</span>
 </div>
@@ -33,14 +34,36 @@
 % if pages > 1:
  <ul>
     <li ${csDisable(1)}><a href="${getHref(curPage-1)}">«</a></li>
-  % if pages <= 6:
+  % if pages <= 7:
     % for i in range(0,pages):
       <li ${csActive(i+1)}><a href="${getHref(i+1)}">${i+1}</a></li>
     % endfor
   % else:
-    "kk"
+    <li ${csActive(1)}><a href="${getHref(1)}">1</a></li>
+    <li ${csActive(2)}><a href="${getHref(2)}">2</a></li>
+    % if curPage>3:
+    <li class="disabled"><a href="#">...</a></li>
+    % endif
+    % if curPage<=2 or curPage>= pages-1:
+    <li ${csActive(midPage)}><a href="${getHref(midPage)}">${midPage}</a></li>
+    <li ${csActive(midPage+1)}><a href="${getHref(midPage+1)}">${midPage+1}</a></li>
+    <li class="disabled"><a href="#">...</a></li>
+    % else:
+      %if curPage+1==pages-1:
+      <li ${csActive(curPage-1)}><a href="${getHref(curPage-1)}">${curPage-1}</a></li>
+      <li ${csActive(curPage)}><a href="${getHref(curPage)}">${curPage}</a></li>
+      % else:
+      <li ${csActive(curPage)}><a href="${getHref(curPage)}">${curPage}</a></li>
+      <li ${csActive(curPage+1)}><a href="${getHref(curPage+1)}">${curPage+1}</a></li>
+        % if pages-1-curPage-1>1:
+        <li class="disabled"><a href="#">...</a></li>
+        % endif
+      % endif
+    % endif
+    <li ${csActive(pages-1)}><a href="${getHref(pages-1)}">${pages-1}</a></li>
+    <li ${csActive(pages)}><a href="${getHref(pages)}">${pages}</a></li>
   % endif
-    <li ${csDisable(pages)}><a href="${getHref(curPage+1)}">»</a></li>
+    <li ${csDisable(pages)}><a href="${getHref(min(curPage+1,pages))}">»</a></li>
   </ul>
 % endif
 </div> 

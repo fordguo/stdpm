@@ -56,6 +56,12 @@ class LPConfig(object):
     self.args = self.confDict.pop("args",())
     self.execArgs = [self.executable]+[str(x) for x in self.args]
     self.usePTY = self.confDict.pop('usePTY',False)
+    monValue = self.monitorValue()
+    self.monEnable = monValue[0][1]
+    self.monLog = None
+    if len(monValue)>1:
+      self.monLog = monValue[1][1]
+      self.monKeyword = monValue[2][1]
   def __getattr__(self, name):
     if self.__dict__.has_key(name):
       return self.__dict__[name]
@@ -85,8 +91,7 @@ class LPConfig(object):
     if mValue.has_key('log'):
       lDict = mValue.get('log')
       if lDict.get('file') is not None and lDict.get('keyword') is not None:
-        result.append(('log',[('file',lDict.get('file')),('keyword',lDict.get('keyword')),\
-          ('action',lDict.get('action','KILL'))]))
+        result.append(('log',[('file',lDict.get('file')),('keyword',lDict.get('keyword'))]))
     return result
   def fileUpdateInfo(self):
     result = []

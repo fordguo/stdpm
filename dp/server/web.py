@@ -195,8 +195,9 @@ class ProcessConfInfoResource(ProcessResource):
     ip,grpName,procName = splitProcName(uniName[0])
     def procInfo(result):
       yamContent = result[0][0]
+      lp = LPConfig(yaml.load(yamContent))
       request.write(getTemplateContent('procConfInfo',clientSideArgs=self._initClientSideArgs(ip),\
-        grpName=grpName,procName=procName,ip=ip,yamContent=yamContent,uniName=uniName[0],**activeCssDict))
+        grpName=grpName,procName=procName,ip=ip,yamContent=yamContent,monLog=lp.monLog,uniName=uniName[0],**activeCssDict))
     getDb().runQuery('SELECT procInfo FROM Process WHERE clientIp = ? and procGroup = ? and procName = ?',\
       [ip,grpName,procName]).addCallback(procInfo).addBoth(finishRequest,request)
     return NOT_DONE_YET
@@ -209,10 +210,12 @@ class ProcessConsoleInfoResource(ProcessResource):
     pageSize = request.args.get('pageSize')
     if curPage is not None: curPage = int(curPage[0])
     pageSize = 4096 if pageSize is None else int(pageSize[0])
+    monLog = request.args.get('monLog')
+    if monLog is not None: monLog = None if monLog[0]=='None' else monLog[0]
     clientip,pgName,psName = splitProcName(uniName[0])
     defQueue = defer.DeferredQueue(1,1)
     defQueue.get().addCallback(lambda x:request.write(getTemplateContent('procConsoleInfo',\
-      clientSideArgs=self._initClientSideArgs(clientip),grpName=pgName,procName=psName,ip=clientip,\
+      clientSideArgs=self._initClientSideArgs(clientip),grpName=pgName,procName=psName,ip=clientip,monLog=monLog,\
       uniName=uniName[0],logInfo=x,curPage=curPage,pageSize=pageSize,**activeCssDict))).addBoth(finishRequest,request)
     jsonArgs = {'action':'procOp','op':'Console','grp':pgName,'name':psName}
     jsonArgs.update(convertPage(curPage,pageSize))

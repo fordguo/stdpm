@@ -93,26 +93,38 @@ def lastFileUpdateTime(psGroup,psName):
       with open(localValue[0].updateLogFile.path,'r') as f:
         return _lastUpdateTime(f)
   return None
-def getPsLog(psGroup,psName,startPos=None,endPos=None,suffix=None):
+def getPsLog(psGroup,psName,startPos=None,endPos=None,suffix=None,logType='console',checkSuffix=True):
   pg = procGroupDict.get(psGroup)
   if pg:
     localValue = pg.locals.get(psName)
     if localValue:
       localProc = localValue[0]
-      return _logContent(localProc.logFile.path,startPos,endPos,suffix)
+      if logType=='console':
+        return _logContent(localProc.logFile.path,startPos,endPos,suffix,checkSuffix)
+      elif logType=='log':
+        return _logContent(localValue[1].monLog,startPos,endPos,suffix,checkSuffix)
+      elif logType=='start':
+        return _logContent(localProc.ssLogFile.path,startPos,endPos,suffix,checkSuffix)
+      elif logType=='update':
+        return _logContent(localProc.updateLogFile.path,startPos,endPos,suffix,checkSuffix)
   return None,None,None,None
-def _logContent(fname,startPos=None,endPos=None,suffix=None):
-  flen = len(fname)+1  
-  suffixes = [d[flen:] for d in glob.glob('%s.*'%fname)]
-  suffixes.sort()
-  if suffix :fname = '%s.%s'%(fname,suffix)
+def _logContent(fname,startPos=None,endPos=None,suffix=None,checkSuffix):
+  suffixes = ''
+  mtime = None
+  if checkSuffix:
+    flen = len(fname)+1  
+    suffixes = [d[flen:] for d in glob.glob('%s.*'%fname)]
+    suffixes.sort()
+    suffixes = ','.join(suffixes)
+    if suffix :fname = '%s.%s'%(fname,suffix)
+    mtime = os.path.getmtime(fname)
   fsize = os.path.getsize(fname)
   if startPos is None: startPos = fsize - LAST_END
   if endPos is None: endPos = fsize
   if startPos<0: startPos = 0
   with open(fname,'r') as f:
     f.seek(startPos,os.SEEK_SET)
-    return f.read(endPos-startPos),fsize,os.path.getmtime(fname),','.join(suffixes)
+    return f.read(endPos-startPos),fsize,mtime,suffixes
 
 class ProcessGroup:
   def __init__(self,yamlFile):
