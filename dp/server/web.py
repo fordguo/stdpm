@@ -66,6 +66,9 @@ class RootResource(Resource):
     elif name=='clientConsoleInfo':
       self._changeActiveCss('procActiveCss')
       return ProcessConsoleInfoResource()
+    elif name=='clientLogInfo':
+      self._changeActiveCss('procActiveCss')
+      return ProcessLogInfoResource()
     elif name=='procOp':
       return ProcOpResource()
     elif name=='groupOp':
@@ -203,7 +206,12 @@ class ProcessConfInfoResource(ProcessResource):
     return NOT_DONE_YET
 def getMonLog(uniName):
   return getStatus(uniName).get('monLog')
-class ProcessConsoleInfoResource(ProcessResource):
+
+class BaseProcessInfoResource(ProcessResource):
+  def __init__(self,templateName,opName):
+    ProcessResource.__init__(self)
+    self.templateName = templateName
+    self.opName = opName
   def render_GET(self, request):
     uniName = request.args.get('name')
     if uniName is None:request.redirect("/")
@@ -213,13 +221,19 @@ class ProcessConsoleInfoResource(ProcessResource):
     pageSize = 4096 if pageSize is None else int(pageSize[0])
     clientip,pgName,psName = splitProcName(uniName[0])
     defQueue = defer.DeferredQueue(1,1)
-    defQueue.get().addCallback(lambda x:request.write(getTemplateContent('procConsoleInfo',\
+    defQueue.get().addCallback(lambda x:request.write(getTemplateContent(self.templateName,\
       clientSideArgs=self._initClientSideArgs(clientip),grpName=pgName,procName=psName,ip=clientip,monLog=getMonLog(uniName[0]),\
       uniName=uniName[0],logInfo=x,curPage=curPage,pageSize=pageSize,**activeCssDict))).addBoth(finishRequest,request)
-    jsonArgs = {'action':'procOp','op':'Console','grp':pgName,'name':psName}
+    jsonArgs = {'action':'procOp','op':self.opName,'grp':pgName,'name':psName}
     jsonArgs.update(convertPage(curPage,pageSize))
     clientIpDict[clientip]['protocol'].asyncSendJson(jsonArgs,defQueue)
     return NOT_DONE_YET
+class ProcessConsoleInfoResource(BaseProcessInfoResource):
+  def __init__(self):
+    BaseProcessInfoResource.__init__(self,'procConsoleInfo','Console')
+class ProcessLogInfoResource(BaseProcessInfoResource):
+  def __init__(self):
+    BaseProcessInfoResource.__init__(self,'procLogInfo','Log')
 
 class GroupOpResource(Resource):
   def render_GET(self, request):

@@ -86,6 +86,8 @@ class CoreClient(NetstringReceiver):
         self._updateProc(psGroup,psName)
       elif op=='Console':
         self.sendLogTxt(json['uuid'],*(process.getPsLog(psGroup,psName,json.get('startPos'),json.get('endPos'))))
+      elif op=='Log':
+        self.sendLogTxt(json['uuid'],*(process.getPsLog(psGroup,psName,json.get('startPos'),json.get('endPos'),logType='log')))
       else:
         print 'unknown procOp value:'+op
     elif action=='groupOp':

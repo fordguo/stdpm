@@ -102,7 +102,9 @@ def getPsLog(psGroup,psName,startPos=None,endPos=None,suffix=None,logType='conso
       if logType=='console':
         return _logContent(localProc.logFile.path,startPos,endPos,suffix,checkSuffix)
       elif logType=='log':
-        return _logContent(localValue[1].monLog,startPos,endPos,suffix,checkSuffix)
+        if localValue[1].logFullName:
+          return _logContent(localValue[1].logFullName,startPos,endPos,suffix,checkSuffix)
+        else:return None,None,None,None
       elif logType=='start':
         return _logContent(localProc.ssLogFile.path,startPos,endPos,suffix,checkSuffix)
       elif logType=='update':
