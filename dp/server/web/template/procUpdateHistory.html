@@ -1,0 +1,31 @@
+<%inherit file="procInfoBase.html"/>
+<ul class="nav nav-tabs">
+  ${self.navUrl('/clientConfInfo?name=%s'%uniName,'Configure')}
+  ${self.navUrl('/clientConsoleInfo?name=%s'%uniName,'Console')}
+  ${self.logUrl(monLog,uniName)}
+  ${self.navUrl('/clientStartHistory?name=%s'%uniName,'Start History')}
+  <li class="active"><a href="#">Update History</a></li>
+</ul>
+<% 
+import time 
+from dp.common import TIME_FORMAT,SEP
+updateDatas = [row.split(SEP) for row in logInfo['content'].split('\n') if row]
+updateDatas.reverse()
+%>
+<%include file="pagination.html" args="totalSize=logInfo['size'],curPage=curPage,pageSize=pageSize,url='/clientUpdateHistory?name=%s'%uniName,showPageSize=showPageSize"/>
+<table class="table table-striped table-bordered table-condensed  table-hover">
+	<thead>
+		<tr>
+			<th>File Name</th>
+			<th>Time</th>
+		<tr>
+	</thead>
+	<tbody>
+		% for updateRow in updateDatas:
+		<tr>
+			<td>${updateRow[0]}</td>
+			<td>${updateRow[1]}</td>
+		</tr>
+		% endfor
+	</tbody>
+</table>

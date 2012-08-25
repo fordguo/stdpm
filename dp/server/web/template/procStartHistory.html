@@ -1,0 +1,33 @@
+<%inherit file="procInfoBase.html"/>
+<ul class="nav nav-tabs">
+  ${self.navUrl('/clientConfInfo?name=%s'%uniName,'Configure')}
+  ${self.navUrl('/clientConsoleInfo?name=%s'%uniName,'Console')}
+  ${self.logUrl(monLog,uniName)}
+  <li class="active"><a href="#">Start History</a></li>
+  ${self.navUrl('/clientUpdateHistory?name=%s'%uniName,'Update History')}
+</ul>
+<% 
+import time 
+from dp.common import TIME_FORMAT,SEP
+statDatas = [row.split(SEP) for row in logInfo['content'].split('\n') if row.startswith('startTime') or row.startswith('endTime')]
+statDatas.reverse()
+%>
+<%include file="pagination.html" args="totalSize=logInfo['size'],curPage=curPage,pageSize=pageSize,url='/clientLogInfo?name=%s'%uniName,showPageSize=showPageSize"/>
+<table class="table table-striped table-bordered table-condensed  table-hover">
+	<thead>
+		<tr>
+			<th>State</th>
+			<th>Time</th>
+			<th>Memo</th>
+		<tr>
+	</thead>
+	<tbody>
+		% for statRow in statDatas:
+		<tr>
+			<td>${statRow[0][0:-4].upper()}</td>
+			<td>${statRow[1]}</td>
+			<td>${statRow[2].upper()}</td>
+		</tr>
+		% endfor
+	</tbody>
+</table>

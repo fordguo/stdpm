@@ -1,4 +1,4 @@
-<%page args="totalSize,curPage,pageSize=4096,url='#'"/>
+<%page args="totalSize,curPage,pageSize=4096,url='#',showPageSize=True"/>
 <%
   pages = int(round(float(totalSize)/pageSize+.5))
   midPage = pages/2
@@ -20,6 +20,7 @@
 <div class="pull-left">
 <span class="inline">Total size : &nbsp;${totalSize} &nbsp;bytes</span>
 </div>
+%if showPageSize:
 <div class="pull-right">
 <span class="inline">Page size :&nbsp;</span>
 <label class="radio inline">
@@ -30,6 +31,7 @@
 </label> 
 <span class="inline">&nbsp;bytes</span>
 </div>
+% endif
 <div class="pagination pagination-centered">
 % if pages > 1:
  <ul>

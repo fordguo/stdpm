@@ -88,6 +88,10 @@ class CoreClient(NetstringReceiver):
         self.sendLogTxt(json['uuid'],*(process.getPsLog(psGroup,psName,json.get('startPos'),json.get('endPos'))))
       elif op=='Log':
         self.sendLogTxt(json['uuid'],*(process.getPsLog(psGroup,psName,json.get('startPos'),json.get('endPos'),logType='log')))
+      elif op=='StartHistory':
+        self.sendLogTxt(json['uuid'],*(process.getPsLog(psGroup,psName,json.get('startPos'),json.get('endPos'),logType='start')))
+      elif op=='UpdateHistory':
+        self.sendLogTxt(json['uuid'],*(process.getPsLog(psGroup,psName,json.get('startPos'),json.get('endPos'),logType='update')))
       else:
         print 'unknown procOp value:'+op
     elif action=='groupOp':
