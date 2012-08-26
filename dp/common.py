@@ -76,15 +76,15 @@ class LPConfig(object):
       self.monLog = None
   def _existFile(self,fname):
     if fname is None: return False
-    if not os.path.exists(fname):
-      fullPath = os.path.join(self.path,fname)
-      if os.path.exists(fullPath):
-        self.logFullName = fullPath
+    fullPath = os.path.join(self.path,fname)
+    if not os.path.exists(fullPath):
+      if os.path.exists(fname):
+        self.logFullName = fname
         return True
       else:
         return False
     else:
-      self.logFullName = fname
+      self.logFullName = fullPath
       return True
   def __getattr__(self, name):
     if self.__dict__.has_key(name):
