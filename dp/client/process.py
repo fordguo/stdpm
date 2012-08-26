@@ -229,8 +229,8 @@ class ProcessGroup:
     oldLastSize = self.tailMap.get(tailName)
     lastSize = None
     isRestart = False
-    def checkContent():
-      content,_,_,_ = getPsLog(localProc.group.name,name,None,None,None,logType,False,1024)
+    def checkContent(delta):
+      content,_,_,_ = getPsLog(localProc.group.name,name,None,None,None,logType,False,delta)
       keywords = localValue[1].monKeywords()
       if keywords:
         for key in keywords:
@@ -241,14 +241,14 @@ class ProcessGroup:
     if oldLastSize is None:
       lastSize = logSize(localProc.group.name,name,logType)
       if lastSize>0:
-        checkContent()
+        checkContent(1024)
     else:
       lastSize = logSize(localProc.group.name,name,'console')
       if lastSize>0:
-        delta = lastSize-oldLastSize
+        delta = abs(lastSize-oldLastSize)
         if delta>0 :
           if delta>1024:delta = 1024
-          checkContent()
+          checkContent(delta)
     self.tailMap[tailName] = lastSize
     return isRestart
 
