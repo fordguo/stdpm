@@ -61,9 +61,16 @@ class LPConfig(object):
     self.monEnable = monValue[0][1]
     self.monLog = None
     self.logFullName = None
+    self.monKeyword = None
     if len(monValue)>1:
       self.monLog = monValue[1][1][0][1]
       self.monKeyword = monValue[1][1][1][1]
+  def monKeywords(self):
+    if not self.monKeyword :return None
+    if isinstance(self.monKeyword,basestring):
+      return [self.monKeyword]
+    else:
+      return self.monKeyword
   def verifyLog(self):
     if not self._existFile(self.monLog):
       self.monLog = None

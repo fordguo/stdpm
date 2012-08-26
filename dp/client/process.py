@@ -93,7 +93,7 @@ def lastFileUpdateTime(psGroup,psName):
       with open(localValue[0].updateLogFile.path,'r') as f:
         return _lastUpdateTime(f)
   return None
-def getPsLog(psGroup,psName,startPos=None,endPos=None,suffix=None,logType='console',checkSuffix=True):
+def getPsLog(psGroup,psName,startPos=None,endPos=None,suffix=None,logType='console',checkSuffix=True,lastEndSize=LAST_END):
   pg = procGroupDict.get(psGroup)
   if pg:
     localValue = pg.locals.get(psName)
@@ -110,7 +110,7 @@ def getPsLog(psGroup,psName,startPos=None,endPos=None,suffix=None,logType='conso
       elif logType=='update':
         return _logContent(localProc.updateLogFile.path,startPos,endPos,suffix,checkSuffix)
   return None,None,None,None
-def _logContent(fname,startPos=None,endPos=None,suffix=None,checkSuffix=True):
+def _logContent(fname,startPos=None,endPos=None,suffix=None,checkSuffix=True,lastEndSize=LAST_END):
   suffixes = ''
   mtime = None
   if checkSuffix:
@@ -121,13 +121,29 @@ def _logContent(fname,startPos=None,endPos=None,suffix=None,checkSuffix=True):
     if suffix :fname = '%s.%s'%(fname,suffix)
     mtime = os.path.getmtime(fname)
   fsize = os.path.getsize(fname)
-  if startPos is None: startPos = fsize - LAST_END
+  if startPos is None: startPos = fsize - lastEndSize
   if endPos is None: endPos = fsize
   if startPos<0: startPos = 0
   with open(fname,'r') as f:
     f.seek(startPos,os.SEEK_SET)
     return f.read(endPos-startPos),fsize,mtime,suffixes
-
+def logSize(psGroup,psName,logType):
+  pg = procGroupDict.get(psGroup)
+  if pg:
+    localValue = pg.locals.get(psName)
+    if localValue:
+      localProc = localValue[0]
+      if logType=='console':
+        return os.path.getsize(localProc.logFile.path)
+      elif logType=='log':
+        if localValue[1].logFullName:
+          return os.path.getsize(localValue[1].logFullName)
+        else:return None
+      elif logType=='start':
+        return os.path.getsize(localProc.ssLogFile.path)
+      elif logType=='update':
+        return os.path.getsize(localProc.updateLogFile.path)
+  return None
 class ProcessGroup:
   def __init__(self,yamlFile):
     self.yamlFile = yamlFile
@@ -135,9 +151,10 @@ class ProcessGroup:
     self.groupDir = dirName = os.path.join(getDatarootDir(),'data','ps',self.name)
     if not os.path.exists( dirName):
       os.makedirs(dirName)
-    self.procsMap = None
-    self.locals = {}
+    self.procsMap = None #yaml map
+    self.locals = {}#key is procName,value[0] is LocalProcess,value[1] is LPConfig
     self.reload()
+    self.tailMap = {} #key is procName log/console,value is lastSize
   def _start(self,name,procInfo,memo=''):
     localValue = self.locals.get(name)
     localProc = LocalProcess(name,self)
@@ -201,15 +218,48 @@ class ProcessGroup:
       if localProc.endTime and not localProc.isRunning() and \
         period is not None and (now-localProc.endTime).seconds > (period*60):
         self.startProc(name,'period')
+      if localValue[1].monEnable and localProc.isRunning():
+        if self._checkLogContent(name,'console',localValue):
+          self.startProc(name,'period_console')
+        elif self._checkLogContent(name,'log',localValue):
+          self.startProc(name,'period_log')
+  def _checkLogContent(self,name,logType,localValue):
+    localProc = localValue[0]
+    tailName = '%s_%s'%(name,logType)
+    oldLastSize = self.tailMap.get(tailName)
+    lastSize = None
+    isRestart = False
+    def checkContent():
+      content,_,_,_ = getPsLog(localProc.group.name,name,None,None,None,logType,False,1024)
+      keywords = localValue[1].monKeywords()
+      if keywords:
+        for key in keywords:
+          if content.find(key)>=0: 
+            isRestart = True
+            break
+
+    if oldLastSize is None:
+      lastSize = logSize(localProc.group.name,name,logType)
+      if lastSize>0:
+        checkContent()
+    else:
+      lastSize = logSize(localProc.group.name,name,'console')
+      if lastSize>0:
+        delta = lastSize-oldLastSize
+        if delta>0 :
+          if delta>1024:delta = 1024
+          checkContent()
+    self.tailMap[tailName] = lastSize
+    return isRestart
 
 class LocalProcess(protocol.ProcessProtocol):
   def __init__(self, name,group):
     self.orgName = name
     self.name = "".join([x for x in name if x.isalnum()])
     self.group = group
-    self.logFile = LogFile(self.name+".log",group.groupDir,maxRotatedFiles=10)
-    self.updateLogFile = LogFile(self.name+".ulog",group.groupDir,rotateLength=100000000,maxRotatedFiles=3)#10M
-    self.ssLogFile = LogFile(self.name+".slog",group.groupDir,rotateLength=100000000,maxRotatedFiles=3)#10M
+    self.logFile = LogFile(self.name+".log",group.groupDir,rotateLength=100000000,maxRotatedFiles=10)#10M
+    self.updateLogFile = LogFile(self.name+".ulog",group.groupDir,rotateLength=100000000,maxRotatedFiles=5)
+    self.ssLogFile = LogFile(self.name+".slog",group.groupDir,rotateLength=100000000,maxRotatedFiles=5)
     self.status = PROC_STATUS.STOP
     self.endTime = None
     self.startMemo = ''
