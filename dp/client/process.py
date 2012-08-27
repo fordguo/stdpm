@@ -243,7 +243,7 @@ class ProcessGroup:
       if lastSize>0:
         checkContent(1024)
     else:
-      lastSize = logSize(localProc.group.name,name,'console')
+      lastSize = logSize(localProc.group.name,name,logType)
       if lastSize>0:
         delta = abs(lastSize-oldLastSize)
         if delta>0 :
