@@ -127,23 +127,23 @@ def _logContent(fname,startPos=None,endPos=None,suffix=None,checkSuffix=True,las
   with open(fname,'r') as f:
     f.seek(startPos,os.SEEK_SET)
     return f.read(endPos-startPos),fsize,mtime,suffixes
-def logSize(psGroup,psName,logType):
+def logSizeTime(psGroup,psName,logType):
   pg = procGroupDict.get(psGroup)
   if pg:
     localValue = pg.locals.get(psName)
     if localValue:
       localProc = localValue[0]
       if logType=='console':
-        return os.path.getsize(localProc.logFile.path)
+        return os.path.getsize(localProc.logFile.path),os.path.getmtime(localProc.logFile.path)
       elif logType=='log':
         if localValue[1].logFullName:
-          return os.path.getsize(localValue[1].logFullName)
-        else:return None
+          return os.path.getsize(localValue[1].logFullName),os.path.getmtime(localValue[1].logFullName)
+        else:return None,None
       elif logType=='start':
-        return os.path.getsize(localProc.ssLogFile.path)
+        return os.path.getsize(localProc.ssLogFile.path),os.path.getmtime(localProc.ssLogFile.path)
       elif logType=='update':
-        return os.path.getsize(localProc.updateLogFile.path)
-  return None
+        return os.path.getsize(localProc.updateLogFile.path),os.path.getmtime(localProc.updateLogFile.path)
+  return None,None
 class ProcessGroup:
   def __init__(self,yamlFile):
     self.yamlFile = yamlFile
@@ -227,9 +227,9 @@ class ProcessGroup:
     localProc = localValue[0]
     tailName = '%s_%s'%(name,logType)
     oldLastSize = self.tailMap.get(tailName)
-    lastSize = None
-    isRestart = False
+    lastSize,isRestart,now = [None,False,time.time()]
     def checkContent(delta):
+      global isRestart
       content,_,_,_ = getPsLog(localProc.group.name,name,None,None,None,logType,False,delta)
       keywords = localValue[1].monKeywords()
       if keywords:
@@ -239,14 +239,14 @@ class ProcessGroup:
             break
 
     if oldLastSize is None:
-      lastSize = logSize(localProc.group.name,name,logType)
-      if lastSize>0:
+      lastSize,lastTime = logSizeTime(localProc.group.name,name,logType)
+      if lastSize>0 and (now-lastTime) < 60:
         checkContent(1024)
     else:
-      lastSize = logSize(localProc.group.name,name,logType)
+      lastSize,lastTime = logSizeTime(localProc.group.name,name,logType)
       if lastSize>0:
         delta = abs(lastSize-oldLastSize)
-        if delta>0 :
+        if delta>0 and (now-lastTime) < 60:
           if delta>1024:delta = 1024
           checkContent(delta)
     self.tailMap[tailName] = lastSize
