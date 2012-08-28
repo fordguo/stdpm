@@ -223,9 +223,9 @@ class ProcessGroup:
         self.startProc(name,'period')
       if localValue[1].monEnable and localProc.isRunning():
         if self._checkLogContent(name,'console',localValue):
-          self.startProc(name,'period_console')
+          self.restartProc(name,memo='period_console')
         elif self._checkLogContent(name,'log',localValue):
-          self.startProc(name,'period_log')
+          self.restartProc(name,memo='period_log')
   def _checkLogContent(self,name,logType,localValue):
     localProc = localValue[0]
     tailName = '%s_%s'%(name,logType)
