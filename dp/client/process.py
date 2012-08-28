@@ -14,6 +14,9 @@ import glob
 procGroupDict = {}
 sendStatusFunc = None
 LAST_END = 4096
+PERIOD = 60
+CHECK_MINUTE = 5
+CHECK_DELTA = PERIOD*CHECK_MINUTE
 
 def registerSendStatus(func):
   global sendStatusFunc
@@ -216,7 +219,7 @@ class ProcessGroup:
       localProc = localValue[0]
       period = localValue[1].getPeriod()
       if localProc.endTime and not localProc.isRunning() and \
-        period is not None and (now-localProc.endTime).seconds > (period*60):
+        period is not None and (now-localProc.endTime).seconds > (period*PERIOD):
         self.startProc(name,'period')
       if localValue[1].monEnable and localProc.isRunning():
         if self._checkLogContent(name,'console',localValue):
@@ -229,26 +232,25 @@ class ProcessGroup:
     oldLastSize = self.tailMap.get(tailName)
     lastSize,isRestart,now = [None,False,time.time()]
     def checkContent(delta):
-      global isRestart
-      content,_,_,_ = getPsLog(localProc.group.name,name,None,None,None,logType,False,delta)
       keywords = localValue[1].monKeywords()
       if keywords:
-        for key in keywords:
-          if content.find(key)>=0: 
-            isRestart = True
-            break
-
+        content,_,_,_ = getPsLog(localProc.group.name,name,None,None,None,logType,False,delta)
+        if content:
+          for key in keywords:
+            if content.find(key)>=0: 
+              return True
+      return False
     if oldLastSize is None:
       lastSize,lastTime = logSizeTime(localProc.group.name,name,logType)
-      if lastSize>0 and (now-lastTime) < 60:
-        checkContent(1024)
+      if lastSize>0 and (now-lastTime) < CHECK_DELTA:
+        isRestart = checkContent(1024)
     else:
       lastSize,lastTime = logSizeTime(localProc.group.name,name,logType)
       if lastSize>0:
         delta = abs(lastSize-oldLastSize)
-        if delta>0 and (now-lastTime) < 60:
+        if delta>0 and (now-lastTime) < CHECK_DELTA:
           if delta>1024:delta = 1024
-          checkContent(delta)
+          isRestart = checkContent(delta)
     self.tailMap[tailName] = lastSize
     return isRestart
 

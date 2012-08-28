@@ -24,7 +24,7 @@ def minuteCheck():
   client.sendJson(json.dumps({'action':'clientStatus','value':''}))
   for procGroup in procGroupDict.itervalues():
     procGroup.checkRestart()
-    if loopCount%5==0:
+    if loopCount%process.CHECK_MINUTE==0:
       for name,proc in procGroup.iterStatus():
         client.sendProcStatus(procGroup.name,name,proc[0].status)      
 looping = task.LoopingCall(minuteCheck)
@@ -154,7 +154,7 @@ def makeService(config):
   changeDpDir(config['dataDir'])
   process.initYaml()
   process.startAll('first')
-  looping.start(60)
+  looping.start(process.PERIOD)
   internet.TCPClient(config['server'],int(config['port']), CoreClientFactory(config)).setServiceParent(clientService)
   def shutdown():
     process.stopAll()
