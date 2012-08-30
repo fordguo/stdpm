@@ -4,20 +4,22 @@
 import win32serviceutil
 import win32service
 import subprocess,sys
+import os,signal
 
 #daemon process command line
 stdpmDir = r'c:\stdpm'
 
-clientdCmd = r'%s %s\clientd.py'%(sys.executable,stdpmDir)
+clientdCmd = r'c:\python27\python.exe %s\clientd.py'%(sys.executable,stdpmDir)
 
 print clientdCmd
 
-#py2.5 use TerminateProcess to kill service daemon
-import ctypes
-
-kernel32 = ctypes.windll.LoadLibrary('kernel32.dll')
+#signal.CTRL_C_EVENT,signal.CTRL_BREAK_EVENT
 
 def kill_process(pid):
+  #py2.5 use TerminateProcess to kill service daemon
+  import ctypes
+
+  kernel32 = ctypes.windll.LoadLibrary('kernel32.dll')
   handle = kernel32.OpenProcess(1, False,pid)
   if handle:
     kernel32.TerminateProcess(handle,0)
@@ -42,9 +44,11 @@ class servicerunner(win32serviceutil.ServiceFramework):
     
     #py2.6 use Popen.terminate() to kill service daemon process
     #self.p.terminate()
+
+    os.kill(self.p.pid,signal.CTRL_C_EVENT)
     
     #py2.5 use TerminateProcess() to kill service daemon process
-    kill_process(self.p.pid)
+    #kill_process(self.p.pid)
 
   def SvcDoRun(self):
     #now I do not want to stop
