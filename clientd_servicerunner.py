@@ -9,7 +9,7 @@ import os,signal
 #daemon process command line
 stdpmDir = r'c:\stdpm'
 
-clientdCmd = r'c:\python27\python.exe %s\clientd.py'%(sys.executable,stdpmDir)
+clientdCmd = r'c:\python27\pythonw.exe %s\clientd.py'%(stdpmDir)
 
 print clientdCmd
 
@@ -44,8 +44,8 @@ class servicerunner(win32serviceutil.ServiceFramework):
     
     #py2.6 use Popen.terminate() to kill service daemon process
     #self.p.terminate()
-
-    os.kill(self.p.pid,signal.CTRL_C_EVENT)
+    self.p.send_signal(signal.CTRL_C_EVENT) #signal.CTRL_BREAK_EVENT
+    #os.kill(self.p.pid,signal.CTRL_C_EVENT)
     
     #py2.5 use TerminateProcess() to kill service daemon process
     #kill_process(self.p.pid)
