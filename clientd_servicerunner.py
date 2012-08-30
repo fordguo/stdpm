@@ -43,8 +43,8 @@ class servicerunner(win32serviceutil.ServiceFramework):
     self.service_want_to_stop = True
     
     #py2.6 use Popen.terminate() to kill service daemon process
-    #self.p.terminate()
-    self.p.send_signal(signal.CTRL_C_EVENT) #signal.CTRL_BREAK_EVENT
+    self.p.terminate()
+    #self.p.send_signal(signal.CTRL_C_EVENT) #signal.CTRL_BREAK_EVENT
     #os.kill(self.p.pid,signal.CTRL_C_EVENT)
     
     #py2.5 use TerminateProcess() to kill service daemon process
