@@ -67,8 +67,6 @@ def _total_seconds(td):
   return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
 def isRun(name):
   status = resourceDict.get(name,DEFAULT_INVALID)['status']==PROC_STATUS.RUN
-  if not status:
-    return status
   ipInfo = clientIpDict.get(name)
   if ipInfo and ipInfo.get('lastShaked'):
     lastShake = ipInfo['lastShaked']

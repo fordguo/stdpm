@@ -82,7 +82,7 @@ def _lastUpdateTime(logFd):
     logFd.seek(-100,os.SEEK_END)
   lines = logFd.readlines()
   if len(lines)>0:
-    return lines[-1].split(',')[1].strip()
+    return lines[-1].split(SEP)[1].strip()
   else:
     return None
 def lastFileUpdateTime(psGroup,psName):
