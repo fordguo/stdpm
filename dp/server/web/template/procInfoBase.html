@@ -2,10 +2,17 @@
     from dp.server.main import isRun
 %>
 <%inherit file="procBase.html"/>
-<h2>${grpName} :: ${procName}<a class="btn btn-small btn-primary pull-right" style="margin-right:20px;" href="/clientProc?ip=${ip}">Return</a></h2>
+<h2>${grpName} :: ${procName}<a class="btn btn-small btn-primary pull-right" style="margin-right:20px;" href="/clientProc?ip=${ip}"><i class="icon-arrow-left icon-white"></i> Return</a></h2>
 <p/>
 ${next.body()}
-<a class="btn btn-primary" href="/clientProc?ip=${ip}">Return</a>
+<div class="btn-group">
+% if isRun(ip):
+<a class="btn" href="/procOp?name=${uniName}&op=Restart" onclick="return confirm('Are you sure to restart ${uniName}?');">
+	<i class="icon-retweet"></i> Restart</a>
+<a class="btn" href="/procOp?name=${uniName}&op=Update" onclick="return confirm('Are you sure to update ${uniName} files?');"><i class="icon-check"></i> Update</a>	
+% endif
+<a class="btn btn-primary" href="/clientProc?ip=${ip}"><i class="icon-arrow-left icon-white"></i> Return</a>
+</div>
 <%def name="logUrl(monLog,uniName)">
 	% if monLog and isRun(ip):
 		<li><a href="/clientLogInfo?name=${uniName}">Log File</a></li>

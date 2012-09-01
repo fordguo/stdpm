@@ -1,10 +1,8 @@
 <%!
     from dp.server.main import isRun
 %>
+<% count=0 %>
 <%inherit file="procBase.html"/>
-<%block name="headLinks">
-  <link href="/static/css/DT_bootstrap.css" type="text/css" rel="stylesheet" />
-</%block>
 <h2>Process List</h2>
 % if flash.msg:
 	<div class="alert alert-${flash.alert}">
@@ -28,6 +26,7 @@
 	<tbody>
 		% for key,value in procDict.iteritems():
 			% for i,procRow in enumerate(value):
+			<% count +=1 %>
 		<tr>
 			% if i==0 :
 				<td rowspan="${len(value)}">${key}<br/>
@@ -57,7 +56,7 @@
 			<td>${procRow[4]}</td>
 			% if isRun(currentIp):
 			<td>
-				<div class="btn-toolbar" style="margin: 0;">
+				<div class="btn-toolbar" style="margin:0;">
 					<div class="btn-group">
 					 	<a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
 					    	<i class="icon-tasks"></i>  Action<span class="caret"></span>
@@ -76,19 +75,8 @@
 		% endfor
 	</tbody>
 </table>
+<span class="pull-left" style="margin:5px;">Total records : ${count}</span>
 <%block name="footScripts">
-  <script type="text/javascript" src="/static/js/jquery.dataTables.min.js"></script>
-  <script type="text/javascript" src="/static/js/DT_bootstrap.js"></script>
-  <script type="text/javascript">$(function () {
-	$('#stdpmDataTable').dataTable( {
-		"sDom": "<'row'<'span6'f><'span6'l>r>t<'row'<'span6'i><'span6'p>>",
-		"sPaginationType": "bootstrap",
-		"bSort": false,
-		"bFilter": false,
-		"bPaginate": false
-	} );
-
-  	});</script>
   <script type="text/javascript">$(function () {
 	$('[data-toggle="modal"]').click(function(e) {
 		e.preventDefault();

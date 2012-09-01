@@ -187,7 +187,7 @@ class ProcOpResource(Resource):
         flash = IFlash(request.getSession())
         flash.msg = msg
         flash.alert = alert
-        request.redirect('/proc')
+        request.redirect('/clientProc?ip=%s'%ip)
         finishRequest(None,request)
       if cmdStr=='Restart':
         clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'procOp','op':cmdStr,'grp':names[1],'name':names[2]}))
@@ -289,7 +289,7 @@ class GroupOpResource(Resource):
       flash = IFlash(request.getSession())
       flash.msg = msg
       flash.alert = alert
-      request.redirect('/proc')
+      request.redirect('/clientProc?ip=%s'%ip)
       finishRequest(None,request)
     if cmdStr=='Restart':
       clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'groupOp','op':cmdStr,'grp':names[1]}))
