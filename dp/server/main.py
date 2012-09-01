@@ -11,7 +11,7 @@ import json
 
 from dp.common import PROC_STATUS,getDatarootDir,checkDir,JSON,JSON_LEN,changeDpDir,selfFileSet,dpDir,TIME_FORMAT,SEP
 
-version = "1.0.3"
+version = "1.0.4"
 
 DEFAULT_INVALID = {'status':PROC_STATUS.STOP,'lastUpdated':None,'fileUpdated':None}
 DATA_DIR="data"
