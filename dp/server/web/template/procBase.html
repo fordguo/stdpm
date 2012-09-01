@@ -1,12 +1,15 @@
 <%inherit file="base.html"/>
 <div class="span2">
 	<div class="well sidebar-nav">
-		<ul class="nav nav-list">
+		<ul class="nav nav-list" id="remoteIps">
 			<li class="nav-header">
 				Remote  Clients
 			</li>
+			% if len(clientSideArgs['clientIps']) > 10:
+			<li><input type="text" style="height:13px;width:70px;" class="search-query" id="ipSearch"></input></li>
+			% endif
 			% for i,ip in enumerate(clientSideArgs['clientIps']):
-			<li class="${clientSideArgs['actCssList'][i]}"> 
+			<li class="${clientSideArgs['actCssList'][i]}" id="${ip}"> 
 				<a href="/clientProc?ip=${ip}">
 					<span class="${clientSideArgs['labelCssList'][i]}">${ip}</span>
 					% if clientSideArgs['countList'][i] > 0:
@@ -21,3 +24,13 @@
 <div class="span10">
 	${next.body()}
 </div>
+<script type="text/javascript">$(function () {
+	$('#ipSearch').keyup(function() {
+    	$('#remoteIps :not(li[id*="'+this.value+'"]) > a').hide();
+  	}).keydown(function(event) {
+  		if (event.which == 8) {//backspace
+		    $('#remoteIps :not(li[id*="'+this.value+'"]) > a').show()
+  			//event.preventDefault();
+  		}
+	});
+})</script>
