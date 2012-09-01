@@ -2,6 +2,9 @@
     from dp.server.main import isRun
 %>
 <%inherit file="base.html"/>
+<%block name="headLinks">
+  <link href="/static/css/DT_bootstrap.css" type="text/css" rel="stylesheet" />
+</%block>
 <h2>Client List</h2>
 % if flash.msg:
 	<div class="alert alert-${flash.alert}">
@@ -9,7 +12,7 @@
 		${flash.msg}
 	</div>
 % endif
-<table class="table table-striped table-bordered table-condensed  table-hover">
+<table class="table table-striped table-bordered table-condensed table-hover" id="stdpmDataTable">
 	<thead>
 		<tr>
 			<th>Client Ip</th>
@@ -30,7 +33,7 @@
 			% if isRun(key):
 				<span class="label label-success">
 			% else:
-				<span class="label label-important">
+				<span class="label label-warning">
 			% endif
 				${value['status'].name}
 				</span>
@@ -39,9 +42,9 @@
 			<td>${value['lastShaked']}</td>
 			<td>${value['fileUpdated']}</td>
 			<td>
-				% if  isRun(key):
 				<form class="form-inline" style="margin-bottom:2px;" method="POST" action="/clientOp">
 				<input type="hidden" name="ip" value="${key}"></input>
+				% if  isRun(key):
 				<div class="btn-toolbar" style="margin: 0;">
 					<div class="btn-group">
 					 	<a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
@@ -56,10 +59,26 @@
 					</div>
 					<button class="btn btn-info" type="submit" name="op" value="Reload"><i class="icon-refresh icon-white"></i> Reload</button>
 				</div>
-				</form>
+				% else:
+					<button class="btn btn-danger" type="submit" name="op" value="Remove"><i class="icon-trash icon-white"></i> Remove</button>
 				% endif
+				</form>
 			</td>
 		</tr>
 		% endfor
 	</tbody>
 </table>
+<%block name="footScripts">
+  <script type="text/javascript" src="/static/js/jquery.dataTables.min.js"></script>
+  <script type="text/javascript" src="/static/js/DT_bootstrap.js"></script>
+  <script type="text/javascript">$(function () {
+	$('#stdpmDataTable').dataTable( {
+		"sDom": "<'row'<'span6'f><'span6'l>r>t<'row'<'span6'i><'span6'p>>",
+		"sPaginationType": "bootstrap",
+		"oLanguage": {
+			"sLengthMenu": "Page size: _MENU_ "
+		}
+	} );
+
+  	});</script>
+</%block>

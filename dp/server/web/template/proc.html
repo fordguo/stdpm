@@ -2,6 +2,9 @@
     from dp.server.main import isRun
 %>
 <%inherit file="procBase.html"/>
+<%block name="headLinks">
+  <link href="/static/css/DT_bootstrap.css" type="text/css" rel="stylesheet" />
+</%block>
 <h2>Process List</h2>
 % if flash.msg:
 	<div class="alert alert-${flash.alert}">
@@ -9,7 +12,7 @@
 		${flash.msg}
 	</div>
 % endif
-<table class="table table-striped table-bordered table-condensed table-hover">
+<table class="table table-striped table-bordered table-condensed table-hover" id="stdpmDataTable">
 	<thead>
 		<tr>
 			<th>Group</th>
@@ -45,7 +48,7 @@
 			% if isRun(procRow[3]):
 				<span class="label label-success">
 			% else:
-				<span class="label label-important">
+				<span class="label label-warning">
 			% endif
 				${procRow[1].name}
 				</span>
@@ -74,6 +77,18 @@
 	</tbody>
 </table>
 <%block name="footScripts">
+  <script type="text/javascript" src="/static/js/jquery.dataTables.min.js"></script>
+  <script type="text/javascript" src="/static/js/DT_bootstrap.js"></script>
+  <script type="text/javascript">$(function () {
+	$('#stdpmDataTable').dataTable( {
+		"sDom": "<'row'<'span6'f><'span6'l>r>t<'row'<'span6'i><'span6'p>>",
+		"sPaginationType": "bootstrap",
+		"bSort": false,
+		"bFilter": false,
+		"bPaginate": false
+	} );
+
+  	});</script>
   <script type="text/javascript">$(function () {
 	$('[data-toggle="modal"]').click(function(e) {
 		e.preventDefault();

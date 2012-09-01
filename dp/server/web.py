@@ -131,7 +131,7 @@ class ProcessResource(Resource):
     clientSideArgs = {'actCssList':[],'labelCssList':[],'countList':[],'clientIps':ips,'currentIp':currentIp}
     for ip in ips:
       clientSideArgs['actCssList'].append('active' if currentIp==ip else '')
-      clientSideArgs['labelCssList'].append('' if isRun(ip) else 'label label-important')
+      clientSideArgs['labelCssList'].append('' if isRun(ip) else 'label')
       clientSideArgs['countList'].append(countStop(ip))
     return clientSideArgs
   def render_GET(self, request):
