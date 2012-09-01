@@ -60,7 +60,7 @@
 					<button class="btn btn-info" type="submit" name="op" value="Reload"><i class="icon-refresh icon-white"></i> Reload</button>
 				</div>
 				% else:
-					<button class="btn btn-danger" type="submit" name="op" value="Remove"><i class="icon-trash icon-white"></i> Remove</button>
+					<button class="btn btn-danger" type="submit" name="op" value="Remove" onclick="return confirm('Are you sure to remove client ${key} ?');"><i class="icon-trash icon-white"></i> Remove</button>
 				% endif
 				</form>
 			</td>

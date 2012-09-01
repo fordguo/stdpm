@@ -101,13 +101,23 @@ class ClientOpResource(Resource):
   def render_POST(self, request):
     cmdStr = request.args['op'][0]
     ip = request.args.get('ip')[0]
-    clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'clientOp','value':cmdStr}))
-    msg = 'Send command %s to %s'%(cmdStr,ip)
-    flash = IFlash(request.getSession())
-    flash.msg = msg
-    time.sleep(0.5)
-    request.redirect('/client')
-    finishRequest(None,request)
+    if cmdStr=='Remove':
+      def removeDb(result):
+        msg = 'Remove client %s'%(ip)
+        del clientIpDict[ip]
+        flash = IFlash(request.getSession())
+        flash.msg = msg
+        request.redirect('/client')
+        finishRequest(None,request)
+      getDb().runOperation('DELETE from Process where clientIp = ? ',[ip]).addCallback(removeDb)
+    else:
+      clientIpDict[ip]['protocol'].sendJson(json.dumps({'action':'clientOp','value':cmdStr}))
+      msg = 'Send command %s to %s'%(cmdStr,ip)
+      time.sleep(0.5)
+      flash = IFlash(request.getSession())
+      flash.msg = msg
+      request.redirect('/client')
+      finishRequest(None,request)
     return NOT_DONE_YET
 
 class ClientResource(Resource):
