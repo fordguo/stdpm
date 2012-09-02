@@ -116,36 +116,44 @@ def getPsLog(psGroup,psName,startPos=None,endPos=None,suffix=None,logType='conso
 def _logContent(fname,startPos=None,endPos=None,suffix=None,checkSuffix=True,lastEndSize=LAST_END):
   suffixes = ''
   mtime = None
-  if checkSuffix:
-    flen = len(fname)+1  
-    suffixes = [d[flen:] for d in glob.glob('%s.*'%fname)]
-    suffixes.sort()
-    suffixes = ','.join(suffixes)
-    if suffix :fname = '%s.%s'%(fname,suffix)
-    mtime = os.path.getmtime(fname)
-  fsize = os.path.getsize(fname)
-  if startPos is None: startPos = fsize - lastEndSize
-  if endPos is None: endPos = fsize
-  if startPos<0: startPos = 0
-  with open(fname,'r') as f:
-    f.seek(startPos,os.SEEK_SET)
-    return f.read(endPos-startPos),fsize,mtime,suffixes
+  try:
+    if checkSuffix:
+      flen = len(fname)+1  
+      suffixes = [d[flen:] for d in glob.glob('%s.*'%fname)]
+      suffixes.sort()
+      suffixes = ','.join(suffixes)
+      if suffix :fname = '%s.%s'%(fname,suffix)
+      mtime = os.path.getmtime(fname)
+    fsize = os.path.getsize(fname)
+    if startPos is None: startPos = fsize - lastEndSize
+    if endPos is None: endPos = fsize
+    if startPos<0: startPos = 0
+    with open(fname,'r') as f:
+      f.seek(startPos,os.SEEK_SET)
+      return f.read(endPos-startPos),fsize,mtime,suffixes
+  except Exception, e:
+    print '_logContent ex',e
+    return None,None,None,None
 def logSizeTime(psGroup,psName,logType):
   pg = procGroupDict.get(psGroup)
   if pg:
     localValue = pg.locals.get(psName)
     if localValue:
       localProc = localValue[0]
-      if logType=='console':
-        return os.path.getsize(localProc.logFile.path),os.path.getmtime(localProc.logFile.path)
-      elif logType=='log':
-        if localValue[1].logFullName:
-          return os.path.getsize(localValue[1].logFullName),os.path.getmtime(localValue[1].logFullName)
-        else:return None,None
-      elif logType=='start':
-        return os.path.getsize(localProc.ssLogFile.path),os.path.getmtime(localProc.ssLogFile.path)
-      elif logType=='update':
-        return os.path.getsize(localProc.updateLogFile.path),os.path.getmtime(localProc.updateLogFile.path)
+      try:
+        if logType=='console':
+          return os.path.getsize(localProc.logFile.path),os.path.getmtime(localProc.logFile.path)
+        elif logType=='log':
+          if localValue[1].logFullName:
+            return os.path.getsize(localValue[1].logFullName),os.path.getmtime(localValue[1].logFullName)
+          else:return None,None
+        elif logType=='start':
+          return os.path.getsize(localProc.ssLogFile.path),os.path.getmtime(localProc.ssLogFile.path)
+        elif logType=='update':
+          return os.path.getsize(localProc.updateLogFile.path),os.path.getmtime(localProc.updateLogFile.path)
+      except Exception, e:
+        print 'logSizeTime ex',e
+        return None,None
   return None,None
 class ProcessGroup:
   def __init__(self,yamlFile):
