@@ -77,7 +77,7 @@ class BufferFileTransferProtocol(Protocol):
         if self.localInfo.get('restartRename',False):
           shutil.copy(cacheFile,os.paht.join(localDir,'%s.new'%(cacheFile)))
         else:
-          self._processFiles(cacheFile,localDir,localInfo)
+          self._processFiles(cacheFile,localDir,self.localInfo)
         if self.psGroup:
           updateLog(self.psGroup,self.psName,self.fname)
         else:
