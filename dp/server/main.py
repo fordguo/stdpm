@@ -73,7 +73,7 @@ def isRun(name):
     return status and _total_seconds(datetime.now()-lastShake)<300
   return status
 def countStop(ip):
-  return len(filter(lambda x: x[0].startswith(ip+':') and x[1]['status']==PROC_STATUS.STOP,resourceDict.iteritems()))
+  return len(filter(lambda x: x[0].startswith(ip+SEP) and x[1]['status']==PROC_STATUS.STOP,resourceDict.iteritems()))
 def uniqueProcName(ip,group,name):
   return "%s%s%s%s%s"%(ip,SEP,group,SEP,name)
 def splitProcName(name):

@@ -141,8 +141,12 @@ class ProcessResource(Resource):
     clientSideArgs = {'actCssList':[],'labelCssList':[],'countList':[],'clientIps':ips,'currentIp':currentIp}
     for ip in ips:
       clientSideArgs['actCssList'].append('active' if currentIp==ip else '')
-      clientSideArgs['labelCssList'].append('' if isRun(ip) else 'label')
-      clientSideArgs['countList'].append(countStop(ip))
+      if isRun(ip): 
+        clientSideArgs['countList'].append(countStop(ip))
+        clientSideArgs['labelCssList'].append('')
+      else:
+        clientSideArgs['countList'].append(0)
+        clientSideArgs['labelCssList'].append('label')
     return clientSideArgs
   def render_GET(self, request):
     flash = IFlash(request.getSession())
