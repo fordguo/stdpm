@@ -10,9 +10,9 @@ JSON_LEN = len(JSON)
 
 import dp
 dpDir = os.path.dirname(dp.__file__)
+dpHome = os.path.realpath(os.path.join(dpDir,'..'))
 selfFileSet = [
-  {'local':{'dir':dpDir},'remote':{'dir':'selfupdate','filters':['*.py']}},
-  {'local':{'dir':os.path.join(dpDir,'client')},'remote':{'dir':'selfupdate/client','filters':['*.py']}},
+  {'local':{'dir':dpHome,'extract':True},'remote':{'dir':'selfupdate','filters':['*.zip']}}
   ]
 
 TIME_FORMAT = '%Y-%m-%d %H:%M:%S'

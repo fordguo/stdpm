@@ -7,6 +7,7 @@ from twisted.protocols.ftp import FTPClient,FTPFileListProtocol
 
 import os,shutil,fnmatch
 import zlib,json
+import tarfile,zipfile
 from datetime import datetime
 try:
     from cStringIO import StringIO
@@ -30,6 +31,25 @@ class BufferFileTransferProtocol(Protocol):
     self.changeFlagList = changeFlagList
   def dataReceived(self,data):
     self.fileInst.write(data)
+  def _processFiles(self,cacheFile,localDir):
+    extname = os.path.splitext(self.fname)[-1].lower()
+    def extract(func):
+      tmpF = None
+      try:
+        tmpF = func(cacheFile,'r')
+        tmpF.extractall(localDir)
+      except Exception, e:
+        print 'extract %s error:%s,just copy it.'%(cacheFile,str(e))
+        shutil.copy(cacheFile,localDir)
+      finally:
+        if tmpF is not None:
+          tmpF.close()
+    if extname in ('.gz','.tar','.bz2'):
+      extract(tarfile.open)
+    elif extname=='.zip':
+      extract(zipfile.ZipFile)
+    else:
+      shutil.copy(cacheFile,localDir)
   def connectionLost(self,reason=ConnectionDone):
     self.fileInst.close()
     if reason.type is not ConnectionDone:
@@ -54,7 +74,7 @@ class BufferFileTransferProtocol(Protocol):
         if self.localInfo.get('restartRename',False):
           shutil.copy(cacheFile,os.paht.join(localDir,'%s.new'%(cacheFile)))
         else:
-          shutil.copy(cacheFile,localDir)
+          self._processFiles(cacheFile,localDir)
         if self.psGroup:
           updateLog(self.psGroup,self.psName,self.fname)
         else:
@@ -105,7 +125,7 @@ def processFiles(result,ftpClient,proto,remoteDir,remoteFilters,localInfo,isLast
           if restart.get('enable',True) and psGroup is not None:
             for cache in restart.get('clearCaches',[]):
               shutil.rmtree(cache)
-            restartProc(psGroup,psName,int(restart.get('sleep',10)))
+            restartProc(psGroup,psName,int(restart.get('sleep',10)),memo='update')
           if client is not None:
             client.sendFileUpdate(psGroup,psName,datetime.now().strftime(TIME_FORMAT))
       ftpClient.quit().addCallback(echoResult)

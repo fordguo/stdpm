@@ -26,7 +26,8 @@ echo 15:
     fileSet:
       - local:
           dir: .
-          restartRename: 
+          restartRename:false
+          extract:false
         remote: 
           dir: .
           filters: ['*']
