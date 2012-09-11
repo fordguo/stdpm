@@ -31,7 +31,7 @@ class BufferFileTransferProtocol(Protocol):
     self.changeFlagList = changeFlagList
   def dataReceived(self,data):
     self.fileInst.write(data)
-  def _processFiles(self,cacheFile,localDir):
+  def _processFiles(self,cacheFile,localDir,localInfo):
     extname = os.path.splitext(self.fname)[-1].lower()
     def extract(func):
       tmpF = None
@@ -44,10 +44,13 @@ class BufferFileTransferProtocol(Protocol):
       finally:
         if tmpF is not None:
           tmpF.close()
-    if extname in ('.gz','.tar','.bz2'):
-      extract(tarfile.open)
-    elif extname=='.zip':
-      extract(zipfile.ZipFile)
+    if localInfo.get('extract',False):
+      if extname in ('.gz','.tar','.bz2'):
+        extract(tarfile.open)
+      elif extname=='.zip':
+        extract(zipfile.ZipFile)
+      else:
+        shutil.copy(cacheFile,localDir)
     else:
       shutil.copy(cacheFile,localDir)
   def connectionLost(self,reason=ConnectionDone):
@@ -74,7 +77,7 @@ class BufferFileTransferProtocol(Protocol):
         if self.localInfo.get('restartRename',False):
           shutil.copy(cacheFile,os.paht.join(localDir,'%s.new'%(cacheFile)))
         else:
-          self._processFiles(cacheFile,localDir)
+          self._processFiles(cacheFile,localDir,localInfo)
         if self.psGroup:
           updateLog(self.psGroup,self.psName,self.fname)
         else:
