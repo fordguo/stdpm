@@ -34,3 +34,4 @@ clientd.cfg
 serverd.cfg
 ps-linux.yaml
 *.zip
+dropin.cache

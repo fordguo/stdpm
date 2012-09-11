@@ -78,7 +78,7 @@ class BufferFileTransferProtocol(Protocol):
         if self.psGroup:
           updateLog(self.psGroup,self.psName,self.fname)
         else:
-          clientUpdateLog(self.fName)
+          clientUpdateLog(self.fname)
 
 def fail(error):
   print 'Ftp failed.  Error was:',error
