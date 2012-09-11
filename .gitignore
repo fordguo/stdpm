@@ -1,5 +1,6 @@
 *.py[co]
 *.log
+httpd.password
 
 # Packages
 *.egg

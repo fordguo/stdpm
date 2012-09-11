@@ -13,7 +13,7 @@ from dp.common import JSON,JSON_LEN,changeDpDir,selfFileSet,SEP
 
 client = None
 
-version="1.0.3"
+version="1.0.4"
 
 loopCount = 0
 

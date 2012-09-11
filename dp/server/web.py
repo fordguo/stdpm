@@ -1,6 +1,6 @@
 #-*- coding:utf-8 -*- 
 
-from twisted.web.resource import Resource
+from twisted.web.resource import Resource,IResource
 from twisted.web.static import File
 from twisted.web.server import NOT_DONE_YET
 from twisted.internet import reactor,defer
@@ -10,7 +10,7 @@ from twisted.python.components import registerAdapter
 from twisted.web.server import Session
 
 import os,tempfile,json
-import time
+import time,shutil
 import yaml
 from mako.template import Template
 from mako.lookup import TemplateLookup
@@ -20,7 +20,6 @@ from dp.server.main import getDb,clientIpDict,getStatus,isRun,countStop,uniquePr
   splitProcName,checkUpdateDir
 
 serverDir = os.path.join(dpDir,'server')
-
 templatePath = os.path.join(serverDir,'web','template','')
 webLookup = TemplateLookup(directories=[templatePath],input_encoding='utf-8',output_encoding='utf-8',\
   module_directory=tempfile.gettempdir())
@@ -303,6 +302,28 @@ class GroupOpResource(Resource):
       reactor.callLater(0.5,delayRender,msg)
     return NOT_DONE_YET
 
-root = RootResource()
-root.putChild("static", File(os.path.join(serverDir,'web','static')))
-root.putChild("favicon.ico", File(os.path.join(serverDir,'web','static','img','favicon.ico')))
+from twisted.cred.portal import IRealm, Portal
+from twisted.cred.checkers import FilePasswordDB
+from twisted.web.guard import HTTPAuthSessionWrapper,BasicCredentialFactory
+import crypt
+
+class StdpmRealm(object):
+  implements(IRealm)
+  def __init__(self, rootRes):
+    self.rootRes = rootRes
+  def requestAvatar(self, avatarId, mind, *interfaces):
+    if IResource in interfaces:
+      return IResource, self.rootRes, lambda: None
+    raise NotImplementedError()
+
+rootRes = RootResource()
+rootRes.putChild("static", File(os.path.join(serverDir,'web','static')))
+rootRes.putChild("favicon.ico", File(os.path.join(serverDir,'web','static','img','favicon.ico')))
+
+passwordFile = os.path.join(dpDir,'..','conf','httpd.password')
+if not os.path.exists(passwordFile):
+  shutil.copyfile(passwordFile+'.example',passwordFile)
+def cmp_pass(uname, password, storedpass):
+  return crypt.crypt(password, storedpass[:2])
+portal = Portal(StdpmRealm(rootRes), [FilePasswordDB(passwordFile,hash=cmp_pass)])
+root = HTTPAuthSessionWrapper(portal, [BasicCredentialFactory("Smart Process Management")])

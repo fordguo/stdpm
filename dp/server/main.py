@@ -200,6 +200,7 @@ def makeService(config):
   changeDpDir(config['dataDir'])
   internet.TCPServer(int(config['mainPort']), CoreServerFactory()).setServiceParent(serverService)
   internet.TCPServer(int(config['ftpPort']),initFtpFactory()).setServiceParent(serverService)
-  internet.TCPServer(int(config['httpPort']),server.Site(root)).setServiceParent(serverService)
+  site = server.Site(root)
+  internet.TCPServer(int(config['httpPort']),site).setServiceParent(serverService)
   return serverService
 
